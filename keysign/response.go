@@ -11,6 +11,7 @@ type Signature struct {
 	R          string `json:"r"`
 	S          string `json:"s"`
 	RecoveryID string `json:"recovery_id"`
+	Signature  string `json:"signature"`
 }
 
 // Response key sign response
@@ -20,12 +21,13 @@ type Response struct {
 	Blame      blame.Blame   `json:"blame"`
 }
 
-func NewSignature(msg, r, s, recoveryID string) Signature {
+func NewSignature(msg, r, s, recoveryID string, signature string) Signature {
 	return Signature{
 		Msg:        msg,
 		R:          r,
 		S:          s,
 		RecoveryID: recoveryID,
+		Signature:  signature,
 	}
 }
 

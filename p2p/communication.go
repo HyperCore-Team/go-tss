@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -59,10 +61,11 @@ type Communication struct {
 	BroadcastMsgChan chan *messages.BroadcastMsgChan
 	externalAddr     maddr.Multiaddr
 	streamMgr        *StreamMgr
+	whitelist        map[string]bool
 }
 
 // NewCommunication create a new instance of Communication
-func NewCommunication(rendezvous string, bootstrapPeers []maddr.Multiaddr, port int, externalIP string) (*Communication, error) {
+func NewCommunication(rendezvous, baseDir string, bootstrapPeers []maddr.Multiaddr, port int, externalIP string, pubKeyWhitelist map[string]bool) (*Communication, error) {
 	addr, err := maddr.NewMultiaddr(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port))
 	if err != nil {
 		return nil, fmt.Errorf("fail to create listen addr: %w", err)
@@ -74,10 +77,15 @@ func NewCommunication(rendezvous string, bootstrapPeers []maddr.Multiaddr, port 
 			return nil, fmt.Errorf("fail to create listen with given external IP: %w", err)
 		}
 	}
+	outputFile, err := os.Create(filepath.Join(baseDir, "tss.log"))
+	if err != nil {
+		return nil, err
+	}
+
 	return &Communication{
 		rendezvous:       rendezvous,
 		bootstrapPeers:   bootstrapPeers,
-		logger:           log.With().Str("module", "communication").Logger(),
+		logger:           log.With().Str("module", "communication").Logger().Output(outputFile),
 		listenAddr:       addr,
 		wg:               &sync.WaitGroup{},
 		stopChan:         make(chan struct{}),
@@ -87,6 +95,7 @@ func NewCommunication(rendezvous string, bootstrapPeers []maddr.Multiaddr, port 
 		BroadcastMsgChan: make(chan *messages.BroadcastMsgChan, 1024),
 		externalAddr:     externalAddr,
 		streamMgr:        NewStreamMgr(),
+		whitelist:        pubKeyWhitelist,
 	}, nil
 }
 
@@ -98,6 +107,16 @@ func (c *Communication) GetHost() host.Host {
 // GetLocalPeerID from p2p host
 func (c *Communication) GetLocalPeerID() string {
 	return c.host.ID().String()
+}
+
+// GetWhitelist return the host
+func (c *Communication) GetWhitelist() map[string]bool {
+	return c.whitelist
+}
+
+// DeleteWhitelistEntry RemoveWhitelistEntry delete an entry in the whitelist map
+func (c *Communication) DeleteWhitelistEntry(pubKey string) {
+	delete(c.whitelist, pubKey)
 }
 
 // Broadcast message to Peers
@@ -188,6 +207,20 @@ func (c *Communication) readFromStream(stream network.Stream) {
 func (c *Communication) handleStream(stream network.Stream) {
 	peerID := stream.Conn().RemotePeer().String()
 	c.logger.Debug().Msgf("handle stream from peer: %s", peerID)
+
+	if len(c.whitelist) > 0 {
+		_, ok := c.whitelist[peerID]
+		if !ok {
+			c.logger.Debug().Msgf("Peer %s is not in our whitelist, will close connection!", peerID)
+			if err := stream.Close(); err == nil {
+				// todo, add mechanism to check that it is actually closed
+				c.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err, peerID)
+			}
+
+			return
+		}
+	}
+
 	// we will read from that stream
 	c.readFromStream(stream)
 }
@@ -238,7 +271,7 @@ func (c *Communication) bootStrapConnectivityCheck() error {
 
 func (c *Communication) startChannel(privKeyBytes []byte) error {
 	ctx := context.Background()
-	p2pPriKey, err := crypto.UnmarshalSecp256k1PrivateKey(privKeyBytes)
+	p2pPriKey, err := crypto.UnmarshalEd25519PrivateKey(privKeyBytes)
 	if err != nil {
 		c.logger.Error().Msgf("error is %f", err)
 		return err
@@ -276,13 +309,13 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 	}
 
 	var connectionErr error
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		connectionErr = c.connectToBootstrapPeers()
 		if connectionErr == nil {
 			break
 		}
-		c.logger.Error().Msg("cannot connect to any bootstrap node, retry in 5 seconds")
-		time.Sleep(time.Second * 5)
+		c.logger.Error().Msg("cannot connect to any bootstrap node, retry in 10 seconds")
+		time.Sleep(time.Second * 10)
 	}
 	if connectionErr != nil {
 		return fmt.Errorf("fail to connect to bootstrap peer: %w", connectionErr)

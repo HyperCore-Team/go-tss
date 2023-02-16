@@ -3,7 +3,6 @@ package common
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	btsskeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
+	btsskeygen "github.com/binance-chain/tss-lib/eddsa/keygen"
 	btss "github.com/binance-chain/tss-lib/tss"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	tcrypto "github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	. "gopkg.in/check.v1"
 
 	"gitlab.com/thorchain/tss/go-tss/blame"
@@ -28,8 +27,13 @@ import (
 
 var (
 	testBlamePrivKey = "YmNiMzA2ODU1NWNjMzk3NDE1OWMwMTM3MDU0NTNjN2YwMzYzZmVhZDE5NmU3NzRhOTMwOWIxN2QyZTQ0MzdkNg=="
-	testSenderPubKey = "thorpub1addwnpepqtspqyy6gk22u37ztra4hq3hdakc0w0k60sfy849mlml2vrpfr0wvm6uz09"
-	testPubKeys      = [...]string{"thorpub1addwnpepqtdklw8tf3anjz7nn5fly3uvq2e67w2apn560s4smmrt9e3x52nt2svmmu3", "thorpub1addwnpepqtspqyy6gk22u37ztra4hq3hdakc0w0k60sfy849mlml2vrpfr0wvm6uz09", "thorpub1addwnpepq2ryyje5zr09lq7gqptjwnxqsy2vcdngvwd6z7yt5yjcnyj8c8cn559xe69", "thorpub1addwnpepqfjcw5l4ay5t00c32mmlky7qrppepxzdlkcwfs2fd5u73qrwna0vzag3y4j"}
+	testSenderPubKey = "D2Ou8kohzWyVESbCOE/yXHmCAaCbB2R1jDWRpECf1JY="
+	testPubKeys      = [...]string{
+		"D2Ou8kohzWyVESbCOE/yXHmCAaCbB2R1jDWRpECf1JY=", // 12D3KooWArSSkT7VYQPrbp6cLqWUTqQYb1rX77GhTJaUWMYjeVFs
+		"8v5YUvEtN8vpNKejH1dmVi4BoEZX+c5EHoqQCXQM/WE=", // 3
+		"Zlgbrnmk6xDkamTs004bZgUYbpiE5dV4rSg+MfSk4gU=", // 2
+		"jzTMn5m27Cmt6EuCAuKnIzxNbVYY4EIywP0a9grmSok=", // 1
+	}
 	testBlamePubKeys = []string{"thorpub1addwnpepqtr5p8tllhp4xaxmu77zhqen24pmrdlnekzevshaqkyzdqljm6rejnnt02t", "thorpub1addwnpepqtspqyy6gk22u37ztra4hq3hdakc0w0k60sfy849mlml2vrpfr0wvm6uz09", "thorpub1addwnpepqga4nded5hhnwsrwmrns803w7vu9mffp9r6dz4l6smaww2l5useuq6vkttg", "thorpub1addwnpepq28hfdpu3rdgvj8skzhlm8hyt5nlwwc8pjrzvn253j86e4dujj6jsmuf25q", "thorpub1addwnpepqfuq0xc67052h288r6flp67l0ny9mg6u3sxhsrlukyfg0fe9j6q36ysd33y", "thorpub1addwnpepq0jszts80udfl4pkfk6cp93647yl6fhu6pk486uwjdz2sf94qvu0kw0t6ug", "thorpub1addwnpepqw6mmffk69n5taaqhq3wsc8mvdpsrdnx960kujeh4jwm9lj8nuyux9hz5e4", "thorpub1addwnpepq0pdhm2jatzg2vy6fyw89vs6q374zayqd5498wn8ww780grq256ygq7hhjt", "thorpub1addwnpepqggwmlgd8u9t2sx4a0styqwhzrvdhpvdww7sqwnweyrh25rjwwm9q65kx9s", "thorpub1addwnpepqtssltyjvms8pa7k4yg85lnrjqtvvr2ecr36rhm7pa4ztf55tnuzzgvegpk"}
 )
 
@@ -43,13 +47,10 @@ var _ = Suite(&TssTestSuite{})
 
 func (t *TssTestSuite) SetUpSuite(c *C) {
 	InitLog("info", true, "tss_common_test")
-	conversion.SetupBech32Prefix()
-	priHexBytes, err := base64.StdEncoding.DecodeString(testBlamePrivKey)
+	rawBytes, err := base64.StdEncoding.DecodeString(testBlamePrivKey)
 	c.Assert(err, IsNil)
-	rawBytes, err := hex.DecodeString(string(priHexBytes))
-	c.Assert(err, IsNil)
-	var priKey secp256k1.PrivKey
-	priKey = rawBytes[:32]
+	var priKey ed25519.PrivKey
+	priKey = rawBytes[:64]
 	t.privKey = priKey
 }
 
@@ -72,7 +73,7 @@ func (t *TssTestSuite) TestGetThreshold(c *C) {
 
 func (t *TssTestSuite) TestMsgToHashInt(c *C) {
 	input := []byte("whatever")
-	result, err := MsgToHashInt(input)
+	result, err := MsgToHashInt(input, messages.ECDSAKEYSIGN)
 	c.Assert(err, IsNil)
 	c.Assert(result, NotNil)
 }
@@ -98,30 +99,6 @@ func (t *TssTestSuite) TestContains(c *C) {
 	c.Assert(ret, Equals, true)
 	ret = Contains(testParties, nil)
 	c.Assert(ret, Equals, false)
-}
-
-func (t *TssTestSuite) TestTssProcessOutCh(c *C) {
-	conf := TssConfig{}
-	localTestPubKeys := make([]string, len(testPubKeys))
-	copy(localTestPubKeys, testPubKeys[:])
-	partiesID, localPartyID, err := conversion.GetParties(localTestPubKeys, testPubKeys[0])
-	c.Assert(err, IsNil)
-	messageRouting := btss.MessageRouting{
-		From:                    localPartyID,
-		To:                      partiesID[3:],
-		IsBroadcast:             true,
-		IsToOldCommittee:        false,
-		IsToOldAndNewCommittees: false,
-	}
-	testFill := []byte("TEST")
-	testContent := &btsskeygen.KGRound1Message{
-		Commitment: testFill,
-	}
-	msg := btss.NewMessageWrapper(messageRouting, testContent)
-	tssMsg := btss.NewMessage(messageRouting, testContent, msg)
-	tssCommonStruct := NewTssCommon("", nil, conf, "test", t.privKey, 1)
-	err = tssCommonStruct.ProcessOutCh(tssMsg, messages.TSSKeyGenMsg)
-	c.Assert(err, IsNil)
 }
 
 func fabricateTssMsg(c *C, privKey tcrypto.PrivKey, partyID *btss.PartyID, roundInfo, msg, msgID string, msgType messages.THORChainTSSMessageType) (*messages.WrappedMessage, []byte) {
@@ -192,12 +169,12 @@ func setupProcessVerMsgEnv(c *C, privKey tcrypto.PrivKey, keyPool []string, part
 	localTestPubKeys := make([]string, partyNum)
 	copy(localTestPubKeys, keyPool[:partyNum])
 	// for the test, we choose the first pubic key as the test instance public key
-	partiesID, localPartyID, err := conversion.GetParties(localTestPubKeys, keyPool[0])
+	partiesID, localPartyID, err := conversion.GetParties(localTestPubKeys, keyPool[0], false, "")
 	c.Assert(err, IsNil)
 	partyIDMap := conversion.SetupPartyIDMap(partiesID)
 	conversion.SetupIDMaps(partyIDMap, tssCommonStruct.PartyIDtoP2PID)
 	ctx := btss.NewPeerContext(partiesID)
-	params := btss.NewParameters(ctx, localPartyID, len(partiesID), 2)
+	params := btss.NewParameters(btss.Edwards(), ctx, localPartyID, len(partiesID), 2)
 	outCh := make(chan btss.Message, len(partiesID))
 	endCh := make(chan btsskeygen.LocalPartySaveData, len(partiesID))
 	keyGenParty := btsskeygen.NewLocalParty(params, outCh, endCh)
@@ -406,10 +383,10 @@ func (t *TssTestSuite) TestProcessVerMessage(c *C) {
 func (t *TssTestSuite) TestTssCommon(c *C) {
 	pk, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeAccPub, "thorpub1addwnpepqtdklw8tf3anjz7nn5fly3uvq2e67w2apn560s4smmrt9e3x52nt2svmmu3")
 	c.Assert(err, IsNil)
-	peerID, err := conversion.GetPeerIDFromSecp256PubKey(pk.Bytes())
+	peerID, err := conversion.GetPeerIDFromEDDSAPubKey(pk.Bytes())
 	c.Assert(err, IsNil)
 	broadcastChannel := make(chan *messages.BroadcastMsgChan)
-	sk := secp256k1.GenPrivKey()
+	sk := ed25519.GenPrivKey()
 	tssCommon := NewTssCommon(peerID.String(), broadcastChannel, TssConfig{}, "message-id", sk, 1)
 	c.Assert(tssCommon, NotNil)
 	stopchan := make(chan struct{})
@@ -418,7 +395,7 @@ func (t *TssTestSuite) TestTssCommon(c *C) {
 	go func() {
 		tssCommon.ProcessInboundMessages(stopchan, &wg)
 	}()
-	bi, err := MsgToHashInt([]byte("whatever"))
+	bi, err := MsgToHashInt([]byte("whatever"), messages.ECDSAKEYSIGN)
 	c.Assert(err, IsNil)
 	wrapMsg, _ := fabricateTssMsg(c, sk, btss.NewPartyID("1,", "test", bi), "roundInfo", "message", "123", messages.TSSKeyGenMsg)
 	buf, err := json.Marshal(wrapMsg)

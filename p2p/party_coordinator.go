@@ -35,10 +35,11 @@ type PartyCoordinator struct {
 	peersGroup         map[string]*PeerStatus
 	joinPartyGroupLock *sync.Mutex
 	streamMgr          *StreamMgr
+	whitelist          map[string]bool
 }
 
 // NewPartyCoordinator create a new instance of PartyCoordinator
-func NewPartyCoordinator(host host.Host, timeout time.Duration) *PartyCoordinator {
+func NewPartyCoordinator(host host.Host, timeout time.Duration, whitelist map[string]bool) *PartyCoordinator {
 	// if no timeout is given, default to 10 seconds
 	if timeout.Nanoseconds() == 0 {
 		timeout = 10 * time.Second
@@ -51,7 +52,9 @@ func NewPartyCoordinator(host host.Host, timeout time.Duration) *PartyCoordinato
 		peersGroup:         make(map[string]*PeerStatus),
 		joinPartyGroupLock: &sync.Mutex{},
 		streamMgr:          NewStreamMgr(),
+		whitelist:          whitelist,
 	}
+
 	host.SetStreamHandler(joinPartyProtocol, pc.HandleStream)
 	host.SetStreamHandler(joinPartyProtocolWithLeader, pc.HandleStreamWithLeader)
 	return pc
@@ -93,12 +96,12 @@ func (pc *PartyCoordinator) processReqMsg(requestMsg *messages.JoinPartyLeaderCo
 	pc.streamMgr.AddStream(requestMsg.ID, stream)
 	pc.joinPartyGroupLock.Lock()
 	peerGroup, ok := pc.peersGroup[requestMsg.ID]
+	remotePeer := stream.Conn().RemotePeer()
 	pc.joinPartyGroupLock.Unlock()
 	if !ok {
 		pc.logger.Info().Msg("this party is not ready")
 		return
 	}
-	remotePeer := stream.Conn().RemotePeer()
 	partyFormed, err := peerGroup.updatePeer(remotePeer)
 	if err != nil {
 		pc.logger.Error().Err(err).Msg("receive msg from unknown peer")
@@ -111,6 +114,18 @@ func (pc *PartyCoordinator) processReqMsg(requestMsg *messages.JoinPartyLeaderCo
 
 func (pc *PartyCoordinator) HandleStream(stream network.Stream) {
 	remotePeer := stream.Conn().RemotePeer()
+	peerID := remotePeer.String()
+
+	_, ok := pc.whitelist[peerID]
+	if !ok {
+		pc.logger.Debug().Msgf("Peer %s is not in our whitelist, will close connection!", peerID)
+		if err := stream.Close(); err == nil {
+			// todo, add mechanism to check that it is actually closed
+			pc.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err, peerID)
+		}
+
+		return
+	}
 	logger := pc.logger.With().Str("remote peer", remotePeer.String()).Logger()
 	logger.Debug().Msg("reading from join party request")
 	payload, err := ReadStreamWithBuffer(stream)
@@ -146,6 +161,19 @@ func (pc *PartyCoordinator) HandleStream(stream network.Stream) {
 // HandleStream handle party coordinate stream
 func (pc *PartyCoordinator) HandleStreamWithLeader(stream network.Stream) {
 	remotePeer := stream.Conn().RemotePeer()
+	peerID := remotePeer.String()
+
+	_, ok := pc.whitelist[peerID]
+	if !ok {
+		pc.logger.Debug().Msgf("Peer %s is not in our whitelist, will close connection!", peerID)
+		if err := stream.Close(); err == nil {
+			// todo, add mechanism to check that it is actually closed
+			pc.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err, peerID)
+		}
+
+		return
+	}
+
 	logger := pc.logger.With().Str("remote peer", remotePeer.String()).Logger()
 	logger.Debug().Msg("reading from join party request")
 	payload, err := ReadStreamWithBuffer(stream)

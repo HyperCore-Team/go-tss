@@ -2,6 +2,8 @@ package storage
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +13,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	"gitlab.com/thorchain/tss/go-tss/messages"
+
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
 	ma "github.com/multiformats/go-multiaddr"
@@ -21,17 +24,17 @@ import (
 
 // KeygenLocalState is a structure used to represent the data we saved locally for different keygen
 type KeygenLocalState struct {
-	PubKey          string                    `json:"pub_key"`
-	LocalData       keygen.LocalPartySaveData `json:"local_data"`
-	ParticipantKeys []string                  `json:"participant_keys"` // the paticipant of last key gen
-	LocalPartyKey   string                    `json:"local_party_key"`
+	PubKey          string   `json:"pub_key"`
+	LocalData       []byte   `json:"local_data"`
+	ParticipantKeys []string `json:"participant_keys"` // the paticipant of last key gen
+	LocalPartyKey   string   `json:"local_party_key"`
 }
 
 // LocalStateManager provide necessary methods to manage the local state, save it , and read it back
 // LocalStateManager doesn't have any opinion in regards to where it should be persistent to
 type LocalStateManager interface {
-	SaveLocalState(state KeygenLocalState) error
-	GetLocalState(pubKey string) (KeygenLocalState, error)
+	SaveLocalState(state KeygenLocalState, algo messages.Algo) error
+	GetLocalState(pubKey string, algo messages.Algo) (KeygenLocalState, error)
 	SaveAddressBook(addressBook map[peer.ID]addr.AddrList) error
 	RetrieveP2PAddresses() (addr.AddrList, error)
 }
@@ -58,16 +61,20 @@ func NewFileStateMgr(folder string) (*FileStateMgr, error) {
 	}, nil
 }
 
-func (fsm *FileStateMgr) getFilePathName(pubKey string) (string, error) {
-	ret, err := conversion.CheckKeyOnCurve(pubKey)
+func (fsm *FileStateMgr) getFilePathName(pubKey string, algo messages.Algo) (string, error) {
+	ret, err := conversion.CheckKeyOnCurve(pubKey, algo)
 	if err != nil {
 		return "", err
 	}
 	if !ret {
 		return "", errors.New("invalid pubkey for file name")
 	}
-
-	localFileName := fmt.Sprintf("localstate-%s.json", pubKey)
+	pubKeyBytes, err := base64.StdEncoding.DecodeString(pubKey)
+	if err != nil {
+		return "", err
+	}
+	hx := hex.EncodeToString(pubKeyBytes)
+	localFileName := fmt.Sprintf("localstate-%s.json", hx)
 	if len(fsm.folder) > 0 {
 		return filepath.Join(fsm.folder, localFileName), nil
 	}
@@ -75,12 +82,12 @@ func (fsm *FileStateMgr) getFilePathName(pubKey string) (string, error) {
 }
 
 // SaveLocalState save the local state to file
-func (fsm *FileStateMgr) SaveLocalState(state KeygenLocalState) error {
+func (fsm *FileStateMgr) SaveLocalState(state KeygenLocalState, algo messages.Algo) error {
 	buf, err := json.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("fail to marshal KeygenLocalState to json: %w", err)
 	}
-	filePathName, err := fsm.getFilePathName(state.PubKey)
+	filePathName, err := fsm.getFilePathName(state.PubKey, algo)
 	if err != nil {
 		return err
 	}
@@ -88,11 +95,11 @@ func (fsm *FileStateMgr) SaveLocalState(state KeygenLocalState) error {
 }
 
 // GetLocalState read the local state from file system
-func (fsm *FileStateMgr) GetLocalState(pubKey string) (KeygenLocalState, error) {
+func (fsm *FileStateMgr) GetLocalState(pubKey string, algo messages.Algo) (KeygenLocalState, error) {
 	if len(pubKey) == 0 {
 		return KeygenLocalState{}, errors.New("pub key is empty")
 	}
-	filePathName, err := fsm.getFilePathName(pubKey)
+	filePathName, err := fsm.getFilePathName(pubKey, algo)
 	if err != nil {
 		return KeygenLocalState{}, err
 	}

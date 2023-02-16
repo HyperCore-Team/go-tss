@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,10 +12,11 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"github.com/btcsuite/btcd/btcec"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/binance-chain/tss-lib/tss"
+
+	"github.com/binance-chain/tss-lib/eddsa/keygen"
+	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
 type (
@@ -42,30 +44,22 @@ func getTssSecretFile(file string) (KeygenLocalState, error) {
 	return localState, nil
 }
 
-func setupBech32Prefix() {
-	config := sdk.GetConfig()
-	// thorchain will import go-tss as a library , thus this is not needed, we copy the prefix here to avoid go-tss to import thorchain
-	config.SetBech32PrefixForAccount("thor", "thorpub")
-	config.SetBech32PrefixForValidator("thorv", "thorvpub")
-	config.SetBech32PrefixForConsensusNode("thorc", "thorcpub")
-}
-
-func getTssPubKey(x, y *big.Int) (string, sdk.AccAddress, error) {
+func getTssPubKey(x, y *big.Int) (string, string, error) {
 	if x == nil || y == nil {
-		return "", sdk.AccAddress{}, errors.New("invalid points")
+		return "", "", errors.New("invalid points")
 	}
-	tssPubKey := btcec.PublicKey{
-		Curve: btcec.S256(),
+	tssPubKey := edwards.PublicKey{
+		Curve: tss.Edwards(),
 		X:     x,
 		Y:     y,
 	}
 	pubKeyCompressed := coskey.PubKey{
 		Key: tssPubKey.SerializeCompressed(),
 	}
+	pubKey := base64.StdEncoding.EncodeToString(pubKeyCompressed.Bytes())
+	addr := ""
 
-	pubKey, err := sdk.Bech32ifyPubKey(sdk.Bech32PubKeyTypeAccPub, &pubKeyCompressed)
-	addr := sdk.AccAddress(pubKeyCompressed.Address().Bytes())
-	return pubKey, addr, err
+	return pubKey, addr, nil
 }
 
 func aesCTRXOR(key, inText, iv []byte) ([]byte, error) {

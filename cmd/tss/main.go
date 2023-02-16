@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"gitlab.com/thorchain/tss/go-tss/messages"
 	"log"
 	"os"
 	"os/signal"
@@ -42,7 +43,6 @@ func main() {
 	common.InitLog(logLevel, pretty, "tss_service")
 
 	// Setup Bech32 Prefixes
-	conversion.SetupBech32Prefix()
 	// this is only need for the binance library
 	if os.Getenv("NET") == "testnet" || os.Getenv("NET") == "mocknet" {
 		types.Network = types.TestNetwork
@@ -68,6 +68,8 @@ func main() {
 		tssConf,
 		nil,
 		p2pConf.ExternalIP,
+		messages.EDDSAKEYGEN,
+		make(map[string]bool),
 	)
 	if nil != err {
 		log.Fatal(err)
@@ -81,7 +83,6 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
-	fmt.Println("stop ")
 	fmt.Println(s.Stop())
 }
 

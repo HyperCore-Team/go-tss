@@ -1,7 +1,11 @@
 package tss
 
 import (
+	"errors"
 	"time"
+
+	"gitlab.com/thorchain/tss/go-tss/keygen/ecdsa"
+	"gitlab.com/thorchain/tss/go-tss/keygen/eddsa"
 
 	"gitlab.com/thorchain/tss/go-tss/blame"
 	"gitlab.com/thorchain/tss/go-tss/common"
@@ -19,17 +23,34 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 		return keygen.Response{}, err
 	}
 
-	keygenInstance := keygen.NewTssKeyGen(
-		t.p2pCommunication.GetLocalPeerID(),
-		t.conf,
-		t.localNodePubKey,
-		t.p2pCommunication.BroadcastMsgChan,
-		t.stopChan,
-		t.preParams,
-		msgID,
-		t.stateManager,
-		t.privateKey,
-		t.p2pCommunication)
+	var keygenInstance keygen.TssKeyGen
+	switch req.Algo {
+	case "ecdsa":
+		keygenInstance = ecdsa.NewTssKeyGen(
+			t.p2pCommunication.GetLocalPeerID(),
+			t.conf,
+			t.localNodePubKey,
+			t.p2pCommunication.BroadcastMsgChan,
+			t.stopChan,
+			t.preParams,
+			msgID,
+			t.stateManager,
+			t.privateKey,
+			t.p2pCommunication)
+	case "eddsa":
+		keygenInstance = eddsa.NewTssKeyGen(
+			t.p2pCommunication.GetLocalPeerID(),
+			t.conf,
+			t.localNodePubKey,
+			t.p2pCommunication.BroadcastMsgChan,
+			t.stopChan,
+			msgID,
+			t.stateManager,
+			t.privateKey,
+			t.p2pCommunication)
+	default:
+		return keygen.Response{}, errors.New("invalid keygen algo")
+	}
 
 	keygenMsgChannel := keygenInstance.GetTssKeyGenChannels()
 	t.p2pCommunication.SetSubscribe(messages.TSSKeyGenMsg, msgID, keygenMsgChannel)
@@ -51,6 +72,18 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 	joinPartyStartTime := time.Now()
 	onlinePeers, leader, errJoinParty := t.joinParty(msgID, req.Version, req.BlockHeight, req.Keys, len(req.Keys)-1, sigChan)
 	joinPartyTime := time.Since(joinPartyStartTime)
+	threshold, err := conversion.GetThreshold(len(req.Keys) + 1)
+	if err != nil {
+		blameNodes, err := blameMgr.NodeSyncBlame(req.Keys, onlinePeers)
+		if err != nil {
+			t.logger.Err(errJoinParty).Msg("fail to get peers to blame")
+		}
+		return keygen.Response{
+			Status:    common.Fail,
+			Blame:     blameNodes,
+			Threshold: threshold,
+		}, errors.New("fail to get threshold")
+	}
 	if errJoinParty != nil {
 		t.tssMetrics.KeygenJoinParty(joinPartyTime, false)
 		t.tssMetrics.UpdateKeyGen(0, false)
@@ -59,8 +92,9 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 			if onlinePeers == nil {
 				t.logger.Error().Err(err).Msg("error before we start join party")
 				return keygen.Response{
-					Status: common.Fail,
-					Blame:  blame.NewBlame(blame.InternalError, []blame.Node{}),
+					Status:    common.Fail,
+					Blame:     blame.NewBlame(blame.InternalError, []blame.Node{}),
+					Threshold: threshold,
 				}, nil
 			}
 			blameNodes, err := blameMgr.NodeSyncBlame(req.Keys, onlinePeers)
@@ -70,8 +104,9 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 			// make sure we blame the leader as well
 			t.logger.Error().Err(errJoinParty).Msgf("fail to form keygen party with online:%v", onlinePeers)
 			return keygen.Response{
-				Status: common.Fail,
-				Blame:  blameNodes,
+				Status:    common.Fail,
+				Blame:     blameNodes,
+				Threshold: threshold,
 			}, nil
 
 		}
@@ -97,8 +132,9 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 		t.logger.Error().Err(errJoinParty).Msgf("fail to form keygen party with online:%v", onlinePeers)
 
 		return keygen.Response{
-			Status: common.Fail,
-			Blame:  blameNodes,
+			Status:    common.Fail,
+			Blame:     blameNodes,
+			Threshold: threshold,
 		}, nil
 
 	}
@@ -115,22 +151,31 @@ func (t *TssServer) Keygen(req keygen.Request) (keygen.Response, error) {
 		t.tssMetrics.UpdateKeyGen(keygenTime, false)
 		t.logger.Error().Err(err).Msg("err in keygen")
 		blameNodes := *blameMgr.GetBlame()
-		return keygen.NewResponse("", "", common.Fail, blameNodes), err
+		return keygen.NewResponse("", common.Fail, blameNodes, "", threshold), err
 	} else {
 		t.tssMetrics.UpdateKeyGen(keygenTime, true)
 	}
 
-	newPubKey, addr, err := conversion.GetTssPubKey(k)
+	blameNodes := *blameMgr.GetBlame()
+	var newPubKey string
+	switch req.Algo {
+	case "ecdsa":
+		newPubKey, err = conversion.GetTssPubKeyECDSA(k)
+	case "eddsa":
+		newPubKey, err = conversion.GetTssPubKeyEDDSA(k)
+	default:
+		newPubKey, err = conversion.GetTssPubKeyECDSA(k)
+	}
 	if err != nil {
 		t.logger.Error().Err(err).Msg("fail to generate the new Tss key")
 		status = common.Fail
 	}
 
-	blameNodes := *blameMgr.GetBlame()
 	return keygen.NewResponse(
 		newPubKey,
-		addr.String(),
 		status,
 		blameNodes,
+		newPubKey,
+		threshold,
 	), nil
 }

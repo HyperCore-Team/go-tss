@@ -2,26 +2,27 @@ package conversion
 
 import (
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 
-	"github.com/btcsuite/btcd/btcec"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/tendermint/btcd/btcec"
 	tcrypto "github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/crypto/ed25519"
+
+	"gitlab.com/thorchain/tss/go-tss/messages"
 )
 
 // GetPeerIDFromPubKey get the peer.ID from bech32 format node pub key
 func GetPeerIDFromPubKey(pubkey string) (peer.ID, error) {
-	pk, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeAccPub, pubkey)
+	pk, err := base64.StdEncoding.DecodeString(pubkey)
 	if err != nil {
 		return "", fmt.Errorf("fail to parse account pub key(%s): %w", pubkey, err)
 	}
-	ppk, err := crypto.UnmarshalSecp256k1PublicKey(pk.Bytes())
+	ppk, err := crypto.UnmarshalEd25519PublicKey(pk)
 	if err != nil {
 		return "", fmt.Errorf("fail to convert pubkey to the crypto pubkey used in libp2p: %w", err)
 	}
@@ -84,41 +85,51 @@ func GetPubKeyFromPeerID(pID string) (string, error) {
 	pubKey := coskey.PubKey{
 		Key: rawBytes,
 	}
-	return sdk.Bech32ifyPubKey(sdk.Bech32PubKeyTypeAccPub, &pubKey)
+	key := base64.StdEncoding.EncodeToString(pubKey.Bytes())
+	return key, nil
 }
 
 func GetPriKey(priKeyString string) (tcrypto.PrivKey, error) {
-	priHexBytes, err := base64.StdEncoding.DecodeString(priKeyString)
+	rawBytes, err := base64.StdEncoding.DecodeString(priKeyString)
 	if err != nil {
 		return nil, fmt.Errorf("fail to decode private key: %w", err)
 	}
-	rawBytes, err := hex.DecodeString(string(priHexBytes))
-	if err != nil {
-		return nil, fmt.Errorf("fail to hex decode private key: %w", err)
+	var priKey ed25519.PrivKey
+	if len(rawBytes) < 64 {
+		return nil, fmt.Errorf("fail to decode private key: %w", err)
 	}
-	var priKey secp256k1.PrivKey
-	priKey = rawBytes[:32]
+	priKey = rawBytes[:64]
 	return priKey, nil
 }
 
 func GetPriKeyRawBytes(priKey tcrypto.PrivKey) ([]byte, error) {
-	var keyBytesArray [32]byte
-	pk, ok := priKey.(secp256k1.PrivKey)
+	var keyBytesArray [64]byte
+	pk, ok := priKey.(ed25519.PrivKey)
 	if !ok {
-		return nil, errors.New("private key is not secp256p1.PrivKey")
+		return nil, errors.New("private key is not ed25519.PrivKey")
 	}
 	copy(keyBytesArray[:], pk[:])
 	return keyBytesArray[:], nil
 }
 
-func CheckKeyOnCurve(pk string) (bool, error) {
-	pubKey, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeAccPub, pk)
-	if err != nil {
-		return false, fmt.Errorf("fail to parse pub key(%s): %w", pk, err)
-	}
-	bPk, err := btcec.ParsePubKey(pubKey.Bytes(), btcec.S256())
+func CheckKeyOnCurve(pk string, algo messages.Algo) (bool, error) {
+	pubKey, err := base64.StdEncoding.DecodeString(pk)
 	if err != nil {
 		return false, err
 	}
-	return isOnCurve(bPk.X, bPk.Y), nil
+	if algo == messages.EDDSAKEYSIGN || algo == messages.EDDSAKEYREGROUP || algo == messages.EDDSAKEYGEN {
+		bPk, err := edwards.ParsePubKey(pubKey)
+		if err == nil {
+			return isOnCurve(bPk.X, bPk.Y, edwards.Edwards()), nil
+		} else {
+			return false, err
+		}
+	} else if algo == messages.ECDSAKEYSIGN || algo == messages.ECDSAKEYREGROUP || algo == messages.ECDSAKEYGEN {
+		btPk, err := btcec.ParsePubKey(pubKey, btcec.S256())
+		if err != nil {
+			return false, err
+		}
+		return isOnCurve(btPk.X, btPk.Y, btcec.S256()), nil
+	}
+	return false, fmt.Errorf("invalid algo")
 }

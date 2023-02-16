@@ -12,8 +12,10 @@ type Metric struct {
 	keygenCounter    *prometheus.CounterVec
 	keysignCounter   *prometheus.CounterVec
 	joinPartyCounter *prometheus.CounterVec
+	keyregroupCounter *prometheus.CounterVec
 	keySignTime      prometheus.Gauge
 	keyGenTime       prometheus.Gauge
+	resharingTime prometheus.Gauge
 	joinPartyTime    *prometheus.GaugeVec
 	logger           zerolog.Logger
 }
@@ -24,6 +26,15 @@ func (m *Metric) UpdateKeyGen(keygenTime time.Duration, success bool) {
 		m.keygenCounter.WithLabelValues("success").Inc()
 	} else {
 		m.keygenCounter.WithLabelValues("failure").Inc()
+	}
+}
+
+func (m *Metric) UpdateKeyRegroup(resharingTime time.Duration, success bool) {
+	if success {
+		m.resharingTime.Set(float64(resharingTime))
+		m.keyregroupCounter.WithLabelValues("success").Inc()
+	} else {
+		m.keyregroupCounter.WithLabelValues("failure").Inc()
 	}
 }
 
@@ -42,6 +53,15 @@ func (m Metric) KeygenJoinParty(joinpartyTime time.Duration, success bool) {
 		m.joinPartyCounter.WithLabelValues("keygen", "success").Inc()
 	} else {
 		m.joinPartyCounter.WithLabelValues("keygen", "failure").Inc()
+	}
+}
+
+func (m Metric) KeyRegroupJoinParty(joinpartyTime time.Duration, success bool) {
+	if success {
+		m.joinPartyTime.WithLabelValues("keyregroup").Set(float64(joinpartyTime))
+		m.joinPartyCounter.WithLabelValues("keyregroup", "success").Inc()
+	} else {
+		m.joinPartyCounter.WithLabelValues("keyregroup", "failure").Inc()
 	}
 }
 
@@ -96,6 +116,16 @@ func NewMetric() *Metric {
 			"type", "result",
 		}),
 
+		keyregroupCounter: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: "Tss",
+				Subsystem: "Tss",
+				Name:      "keyregroup",
+				Help:      "Tss keyregroup success and failure counter",
+			},
+			[]string{"status"},
+		),
+
 		keyGenTime: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: "Tss",
@@ -111,6 +141,15 @@ func NewMetric() *Metric {
 				Subsystem: "Tss",
 				Name:      "keysign_time",
 				Help:      "the time spend for the latest keysign",
+			},
+		),
+
+		resharingTime: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Namespace: "Tss",
+				Subsystem: "Tss",
+				Name:      "keyregroup_time",
+				Help:      "the time spend for the latest keysign/keygen join party",
 			},
 		),
 

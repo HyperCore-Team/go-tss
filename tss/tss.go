@@ -1,15 +1,19 @@
 package tss
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"sync"
+	"time"
+
+	keyRegroup "gitlab.com/thorchain/tss/go-tss/regroup"
 
 	bkeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	btsskeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
+	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
 	"github.com/rs/zerolog"
@@ -52,15 +56,14 @@ func NewTss(
 	conf common.TssConfig,
 	preParams *bkeygen.LocalPreParams,
 	externalIP string,
+	algo messages.Algo,
+	pubKeyWhitelist map[string]bool,
 ) (*TssServer, error) {
 	pk := coskey.PubKey{
 		Key: priKey.PubKey().Bytes()[:],
 	}
 
-	pubKey, err := sdk.Bech32ifyPubKey(sdk.Bech32PubKeyTypeAccPub, &pk)
-	if err != nil {
-		return nil, fmt.Errorf("fail to genearte the key: %w", err)
-	}
+	pubKey := base64.StdEncoding.EncodeToString(pk.Bytes())
 
 	stateManager, err := storage.NewFileStateMgr(baseFolder)
 	if err != nil {
@@ -75,7 +78,8 @@ func NewTss(
 		bootstrapPeers = savedPeers
 		bootstrapPeers = append(bootstrapPeers, cmdBootstrapPeers...)
 	}
-	comm, err := p2p.NewCommunication(rendezvous, bootstrapPeers, p2pPort, externalIP)
+
+	comm, err := p2p.NewCommunication(rendezvous, baseFolder, bootstrapPeers, p2pPort, externalIP, pubKeyWhitelist)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create communication layer: %w", err)
 	}
@@ -84,14 +88,16 @@ func NewTss(
 	// time.
 	// This code will generate those parameters using a concurrency limit equal
 	// to the number of available CPU cores.
-	if preParams == nil || !preParams.Validate() {
-		preParams, err = bkeygen.GeneratePreParams(conf.PreParamTimeout)
-		if err != nil {
-			return nil, fmt.Errorf("fail to generate pre parameters: %w", err)
+	if algo == messages.ECDSAKEYGEN || algo == messages.ECDSAKEYREGROUP {
+		if preParams == nil || !preParams.Validate() {
+			preParams, err = bkeygen.GeneratePreParams(conf.PreParamTimeout)
+			if err != nil {
+				return nil, fmt.Errorf("fail to generate pre parameters: %w", err)
+			}
 		}
-	}
-	if !preParams.Validate() {
-		return nil, errors.New("invalid preparams")
+		if !preParams.Validate() {
+			return nil, errors.New("invalid preparams")
+		}
 	}
 
 	priKeyRawBytes, err := conversion.GetPriKeyRawBytes(priKey)
@@ -101,8 +107,8 @@ func NewTss(
 	if err := comm.Start(priKeyRawBytes); nil != err {
 		return nil, fmt.Errorf("fail to start p2p network: %w", err)
 	}
-	pc := p2p.NewPartyCoordinator(comm.GetHost(), conf.PartyTimeout)
-	sn := keysign.NewSignatureNotifier(comm.GetHost())
+	pc := p2p.NewPartyCoordinator(comm.GetHost(), conf.PartyTimeout, pubKeyWhitelist)
+	sn := keysign.NewSignatureNotifier(comm.GetHost(), pubKeyWhitelist, algo)
 	metrics := monitor.NewMetric()
 	if conf.EnableMonitor {
 		metrics.Enable()
@@ -143,6 +149,23 @@ func (t *TssServer) Stop() {
 	log.Info().Msg("The Tss and p2p server has been stopped successfully")
 }
 
+func (t *TssServer) SetKeySignTimeouts(keySignTimeout, partyTimeout time.Duration) {
+	t.conf.KeySignTimeout = keySignTimeout
+	t.conf.PartyTimeout = partyTimeout
+}
+
+func (t *TssServer) Config() common.TssConfig {
+	return t.conf
+}
+
+func (t *TssServer) GetWhitelist() map[string]bool {
+	return t.p2pCommunication.GetWhitelist()
+}
+
+func (t *TssServer) DeleteWhitelistEntry(pubKey string) {
+	t.p2pCommunication.DeleteWhitelistEntry(pubKey)
+}
+
 func (t *TssServer) requestToMsgId(request interface{}) (string, error) {
 	var dat []byte
 	var keys []string
@@ -153,6 +176,8 @@ func (t *TssServer) requestToMsgId(request interface{}) (string, error) {
 		sort.Strings(value.Messages)
 		dat = []byte(strings.Join(value.Messages, ","))
 		keys = value.SignerPubKeys
+	case keyRegroup.Request:
+		keys = value.NewPartyKeys
 	default:
 		t.logger.Error().Msg("unknown request type")
 		return "", errors.New("unknown request type")
@@ -206,4 +231,21 @@ func (t *TssServer) joinParty(msgID, version string, blockHeight int64, particip
 // GetLocalPeerID return the local peer
 func (t *TssServer) GetLocalPeerID() string {
 	return t.p2pCommunication.GetLocalPeerID()
+}
+
+func (t *TssServer) GetPreParams() *btsskeygen.LocalPreParams {
+	return t.preParams
+}
+
+func (t *TssServer) GeneratePreParams() error {
+	newPreParams, err := bkeygen.GeneratePreParams(t.conf.PreParamTimeout)
+	if err != nil {
+		return fmt.Errorf("fail to generate pre parameters: %w", err)
+	}
+
+	if !newPreParams.Validate() {
+		return errors.New("invalid preparams")
+	}
+	t.preParams = newPreParams
+	return nil
 }

@@ -3,17 +3,19 @@ package storage
 import (
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
+
+	"gitlab.com/thorchain/tss/go-tss/messages"
 )
 
 // MockLocalStateManager is a mock use for test purpose
 type MockLocalStateManager struct {
 }
 
-func (s *MockLocalStateManager) SaveLocalState(state KeygenLocalState) error {
+func (s *MockLocalStateManager) SaveLocalState(state KeygenLocalState, algo messages.Algo) error {
 	return nil
 }
 
-func (s *MockLocalStateManager) GetLocalState(pubKey string) (KeygenLocalState, error) {
+func (s *MockLocalStateManager) GetLocalState(pubKey string, algo messages.Algo) (KeygenLocalState, error) {
 	return KeygenLocalState{}, nil
 }
 

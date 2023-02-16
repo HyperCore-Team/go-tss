@@ -8,7 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	atypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 // GetRandomPubKey for test
@@ -21,9 +21,9 @@ func GetRandomPubKey() string {
 // GetRandomPeerID for test
 func GetRandomPeerID() peer.ID {
 	_, pubKey, _ := atypes.KeyTestPubAddr()
-	var pk secp256k1.PubKey
+	var pk ed25519.PubKey
 	copy(pk[:], pubKey.Bytes())
-	peerID, _ := GetPeerIDFromSecp256PubKey(pk)
+	peerID, _ := GetPeerIDFromEDDSAPubKey(pk)
 	return peerID
 }
 

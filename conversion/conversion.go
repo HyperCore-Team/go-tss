@@ -1,24 +1,25 @@
 package conversion
 
 import (
+	"crypto/elliptic"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
 	"math/big"
 	"sort"
-	"strconv"
 	"strings"
+
+	"github.com/tendermint/btcd/btcec"
 
 	"github.com/binance-chain/tss-lib/crypto"
 	btss "github.com/binance-chain/tss-lib/tss"
-	"github.com/btcsuite/btcd/btcec"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 	crypto2 "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"gitlab.com/thorchain/binance-sdk/common/types"
 
 	"gitlab.com/thorchain/tss/go-tss/messages"
 )
@@ -35,12 +36,24 @@ func GetPeerIDFromSecp256PubKey(pk []byte) (peer.ID, error) {
 	return peer.IDFromPublicKey(ppk)
 }
 
+// GetPeerIDFromEDDSAPubKey convert the given public key into a peer.ID
+func GetPeerIDFromEDDSAPubKey(pk []byte) (peer.ID, error) {
+	if len(pk) == 0 {
+		return "", errors.New("empty public key raw bytes")
+	}
+	ppk, err := crypto2.UnmarshalEd25519PublicKey(pk)
+	if err != nil {
+		return "", fmt.Errorf("fail to convert pubkey to the crypto pubkey used in libp2p: %w", err)
+	}
+	return peer.IDFromPublicKey(ppk)
+}
+
 func GetPeerIDFromPartyID(partyID *btss.PartyID) (peer.ID, error) {
 	if partyID == nil || !partyID.ValidateBasic() {
 		return "", errors.New("invalid partyID")
 	}
 	pkBytes := partyID.KeyInt().Bytes()
-	return GetPeerIDFromSecp256PubKey(pkBytes)
+	return GetPeerIDFromEDDSAPubKey(pkBytes)
 }
 
 func PartyIDtoPubKey(party *btss.PartyID) (string, error) {
@@ -51,10 +64,7 @@ func PartyIDtoPubKey(party *btss.PartyID) (string, error) {
 	pk := coskey.PubKey{
 		Key: partyKeyBytes,
 	}
-	pubKey, err := sdk.Bech32ifyPubKey(sdk.Bech32PubKeyTypeAccPub, &pk)
-	if err != nil {
-		return "", err
-	}
+	pubKey := base64.StdEncoding.EncodeToString(pk.Bytes())
 	return pubKey, nil
 }
 
@@ -107,27 +117,29 @@ func SetupIDMaps(parties map[string]*btss.PartyID, partyIDtoP2PID map[string]pee
 	return nil
 }
 
-func GetParties(keys []string, localPartyKey string) ([]*btss.PartyID, *btss.PartyID, error) {
+func GetParties(keys []string, localPartyKey string, retLocalParty bool, moniker string) ([]*btss.PartyID, *btss.PartyID, error) {
 	var localPartyID *btss.PartyID
 	var unSortedPartiesID []*btss.PartyID
 	sort.Strings(keys)
-	for idx, item := range keys {
-		pk, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeAccPub, item)
+	for _, item := range keys {
+		pkBytes, err := base64.StdEncoding.DecodeString(item)
 		if err != nil {
-			return nil, nil, fmt.Errorf("fail to get account pub key address(%s): %w", item, err)
+			panic(err)
 		}
-		key := new(big.Int).SetBytes(pk.Bytes())
+		key := new(big.Int).SetBytes(pkBytes)
+
 		// Set up the parameters
 		// Note: The `id` and `moniker` fields are for convenience to allow you to easily track participants.
 		// The `id` should be a unique string representing this party in the network and `moniker` can be anything (even left blank).
 		// The `uniqueKey` is a unique identifying key for this peer (such as its p2p public key) as a big.Int.
-		partyID := btss.NewPartyID(strconv.Itoa(idx), "", key)
+		partyID := btss.NewPartyID(item, moniker, key)
 		if item == localPartyKey {
 			localPartyID = partyID
 		}
 		unSortedPartiesID = append(unSortedPartiesID, partyID)
 	}
-	if localPartyID == nil {
+
+	if localPartyID == nil && retLocalParty {
 		return nil, nil, errors.New("local party is not in the list")
 	}
 
@@ -136,35 +148,28 @@ func GetParties(keys []string, localPartyKey string) ([]*btss.PartyID, *btss.Par
 }
 
 func GetPreviousKeySignUicast(current string) string {
-	if strings.HasSuffix(current, messages.KEYSIGN1b) {
-		return messages.KEYSIGN1aUnicast
+	if strings.HasSuffix(current, messages.EDDSAKEYSIGN2) {
+		return messages.EDDSAKEYSIGN1
 	}
-	return messages.KEYSIGN2Unicast
+	return messages.EDDSAKEYSIGN2
 }
 
-func isOnCurve(x, y *big.Int) bool {
-	curve := btcec.S256()
+func isOnCurve(x, y *big.Int, curve elliptic.Curve) bool {
 	return curve.IsOnCurve(x, y)
 }
 
-func GetTssPubKey(pubKeyPoint *crypto.ECPoint) (string, types.AccAddress, error) {
+func GetTssPubKeyEDDSA(pubKeyPoint *crypto.ECPoint) (string, error) {
 	// we check whether the point is on curve according to Kudelski report
-	if pubKeyPoint == nil || !isOnCurve(pubKeyPoint.X(), pubKeyPoint.Y()) {
-		return "", types.AccAddress{}, errors.New("invalid points")
+	if pubKeyPoint == nil || !isOnCurve(pubKeyPoint.X(), pubKeyPoint.Y(), btss.Edwards()) {
+		return "", errors.New("[EDDSA] invalid points")
 	}
-	tssPubKey := btcec.PublicKey{
-		Curve: btcec.S256(),
+	tssPubKey := edwards.PublicKey{
+		Curve: edwards.Edwards(),
 		X:     pubKeyPoint.X(),
 		Y:     pubKeyPoint.Y(),
 	}
-
-	compressedPubkey := coskey.PubKey{
-		Key: tssPubKey.SerializeCompressed(),
-	}
-
-	pubKey, err := sdk.Bech32ifyPubKey(sdk.Bech32PubKeyTypeAccPub, &compressedPubkey)
-	addr := types.AccAddress(compressedPubkey.Address().Bytes())
-	return pubKey, addr, err
+	pubKey := base64.StdEncoding.EncodeToString(tssPubKey.Serialize())
+	return pubKey, nil
 }
 
 func BytesToHashString(msg []byte) (string, error) {
@@ -182,4 +187,40 @@ func GetThreshold(value int) (int, error) {
 	}
 	threshold := int(math.Ceil(float64(value)*2.0/3.0)) - 1
 	return threshold, nil
+}
+
+func GetTssPubKeyECDSA(pubKeyPoint *crypto.ECPoint) (string, error) {
+	// we check whether the point is on curve according to Kudelski report
+	if pubKeyPoint == nil || !isOnCurve(pubKeyPoint.X(), pubKeyPoint.Y(), btss.S256()) {
+		return "", errors.New("[ECDSA] invalid points")
+	}
+	tssPubKey := btcec.PublicKey{
+		Curve: btcec.S256(),
+		X:     pubKeyPoint.X(),
+		Y:     pubKeyPoint.Y(),
+	}
+
+	pubKey := base64.StdEncoding.EncodeToString(tssPubKey.SerializeCompressed())
+	return pubKey, nil
+}
+
+//// EDDSA
+
+func GetPrivateKeyFromB64String(b64Key string) (crypto2.PrivKey, error) {
+	priHexBytes, err := base64.StdEncoding.DecodeString(b64Key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode private key: %w", err)
+	}
+	privateKey, err := crypto2.UnmarshalEd25519PrivateKey(priHexBytes)
+	return privateKey, err
+}
+
+func GetEDDSAPrivateKeyRawBytes(privateKey crypto2.PrivKey) ([]byte, error) {
+	var keyBytesArray [64]byte
+	pk, err := privateKey.Raw()
+	if err != nil {
+		return nil, err
+	}
+	copy(keyBytesArray[:], pk[:])
+	return keyBytesArray[:], nil
 }

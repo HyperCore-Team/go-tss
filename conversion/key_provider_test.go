@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"gitlab.com/thorchain/tss/go-tss/messages"
+
 	"github.com/stretchr/testify/assert"
 	. "gopkg.in/check.v1"
 )
@@ -15,7 +17,6 @@ type KeyProviderTestSuite struct{}
 var _ = Suite(&KeyProviderTestSuite{})
 
 func TestGetPubKeysFromPeerIDs(t *testing.T) {
-	SetupBech32Prefix()
 	input := []string{
 		"16Uiu2HAmBdJRswX94UwYj6VLhh4GeUf9X3SjBRgTqFkeEMLmfk2M",
 		"16Uiu2HAkyR9dsFqkj1BqKw8ZHAUU2yur6ZLRJxPTiiVYP5uBMeMG",
@@ -26,8 +27,8 @@ func TestGetPubKeysFromPeerIDs(t *testing.T) {
 		t.FailNow()
 	}
 	assert.Len(t, result, 2)
-	assert.Equal(t, "thorpub1addwnpepqtctt9l4fddeh0krvdpxmqsxa5z9xsa0ac6frqfhm9fq6c6u5lck5s8fm4n", result[0])
-	assert.Equal(t, "thorpub1addwnpepqga5cupfejfhtw507sh36fvwaekyjt5kwaw0cmgnpku0at2a87qqkp60t43", result[1])
+	assert.Equal(t, "AvC1l/VLW5u+w2NCbYIG7QRTQ6/uNJGBN9lSDWNcp/Fq", result[0])
+	assert.Equal(t, "AjtMcCnMk3W6j/QvHSWO7mxJLpZ3XPxtEw24/q1dP4AL", result[1])
 	input1 := append(input, "whatever")
 	result, err = GetPubKeysFromPeerIDs(input1)
 	assert.NotNil(t, err)
@@ -48,20 +49,20 @@ func (*KeyProviderTestSuite) TestGetPriKey(c *C) {
 	result, err := GetPriKeyRawBytes(pk)
 	c.Assert(err, IsNil)
 	c.Assert(result, NotNil)
-	c.Assert(result, HasLen, 32)
+	c.Assert(result, HasLen, 64)
 }
 
 func (KeyProviderTestSuite) TestGetPeerIDs(c *C) {
 	pubKeys := []string{
-		"thorpub1addwnpepqtctt9l4fddeh0krvdpxmqsxa5z9xsa0ac6frqfhm9fq6c6u5lck5s8fm4n",
-		"thorpub1addwnpepqga5cupfejfhtw507sh36fvwaekyjt5kwaw0cmgnpku0at2a87qqkp60t43",
+		"D2Ou8kohzWyVESbCOE/yXHmCAaCbB2R1jDWRpECf1JY=", // 12D3KooWArSSkT7VYQPrbp6cLqWUTqQYb1rX77GhTJaUWMYjeVFs
+		"8v5YUvEtN8vpNKejH1dmVi4BoEZX+c5EHoqQCXQM/WE=", // 12D3KooWSAumwg2rxzjsgv7LuWM4u3HqfLcnekg2NHc5TsNj5hgC
 	}
 	peers, err := GetPeerIDs(pubKeys)
 	c.Assert(err, IsNil)
 	c.Assert(peers, NotNil)
 	c.Assert(peers, HasLen, 2)
-	c.Assert(peers[0].String(), Equals, "16Uiu2HAmBdJRswX94UwYj6VLhh4GeUf9X3SjBRgTqFkeEMLmfk2M")
-	c.Assert(peers[1].String(), Equals, "16Uiu2HAkyR9dsFqkj1BqKw8ZHAUU2yur6ZLRJxPTiiVYP5uBMeMG")
+	c.Assert(peers[0].String(), Equals, "12D3KooWArSSkT7VYQPrbp6cLqWUTqQYb1rX77GhTJaUWMYjeVFs")
+	c.Assert(peers[1].String(), Equals, "12D3KooWSAumwg2rxzjsgv7LuWM4u3HqfLcnekg2NHc5TsNj5hgC")
 	pubKeys1 := append(pubKeys, "helloworld")
 	peers, err = GetPeerIDs(pubKeys1)
 	c.Assert(err, NotNil)
@@ -69,18 +70,17 @@ func (KeyProviderTestSuite) TestGetPeerIDs(c *C) {
 }
 
 func (KeyProviderTestSuite) TestGetPeerIDFromPubKey(c *C) {
-	pID, err := GetPeerIDFromPubKey("thorpub1addwnpepqtctt9l4fddeh0krvdpxmqsxa5z9xsa0ac6frqfhm9fq6c6u5lck5s8fm4n")
+	pID, err := GetPeerIDFromPubKey("D2Ou8kohzWyVESbCOE/yXHmCAaCbB2R1jDWRpECf1JY=")
 	c.Assert(err, IsNil)
-	c.Assert(pID.String(), Equals, "16Uiu2HAmBdJRswX94UwYj6VLhh4GeUf9X3SjBRgTqFkeEMLmfk2M")
+	c.Assert(pID.String(), Equals, "12D3KooWArSSkT7VYQPrbp6cLqWUTqQYb1rX77GhTJaUWMYjeVFs")
 	pID1, err := GetPeerIDFromPubKey("whatever")
 	c.Assert(err, NotNil)
 	c.Assert(pID1.String(), Equals, "")
 }
 
 func (KeyProviderTestSuite) TestCheckKeyOnCurve(c *C) {
-	_, err := CheckKeyOnCurve("aa")
+	_, err := CheckKeyOnCurve("aa", messages.ECDSAKEYGEN)
 	c.Assert(err, NotNil)
-	SetupBech32Prefix()
-	_, err = CheckKeyOnCurve("thorpub1addwnpepqtctt9l4fddeh0krvdpxmqsxa5z9xsa0ac6frqfhm9fq6c6u5lck5s8fm4n")
+	_, err = CheckKeyOnCurve("A5USsme4piKC377RzQr9U3k9yvcWe9oynB9XooXd6akm", messages.ECDSAKEYGEN)
 	c.Assert(err, IsNil)
 }
