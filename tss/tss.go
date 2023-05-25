@@ -154,6 +154,10 @@ func (t *TssServer) SetKeySignTimeouts(keySignTimeout, partyTimeout time.Duratio
 	t.conf.PartyTimeout = partyTimeout
 }
 
+func (t *TssServer) SetPartyTimeout(partyTimeout time.Duration) {
+	t.conf.PartyTimeout = partyTimeout
+}
+
 func (t *TssServer) Config() common.TssConfig {
 	return t.conf
 }
