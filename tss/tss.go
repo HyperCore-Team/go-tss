@@ -109,7 +109,12 @@ func NewTss(
 	if err := comm.Start(priKeyRawBytes); nil != err {
 		return nil, fmt.Errorf("fail to start p2p network: %w", err)
 	}
-	pc := p2p.NewPartyCoordinator(comm.GetHost(), conf.PartyTimeout, pubKeyWhitelist)
+
+	logFile, err := os.Create(filepath.Join(baseFolder, "tss.party.log"))
+	if err != nil {
+		return nil, err
+	}
+	pc := p2p.NewPartyCoordinator(comm.GetHost(), logFile, conf.PartyTimeout, pubKeyWhitelist)
 	sn := keysign.NewSignatureNotifier(comm.GetHost(), pubKeyWhitelist, algo)
 	metrics := monitor.NewMetric()
 	if conf.EnableMonitor {

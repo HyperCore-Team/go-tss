@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -39,13 +40,14 @@ type PartyCoordinator struct {
 }
 
 // NewPartyCoordinator create a new instance of PartyCoordinator
-func NewPartyCoordinator(host host.Host, timeout time.Duration, whitelist map[string]bool) *PartyCoordinator {
+func NewPartyCoordinator(host host.Host, logFile *os.File, timeout time.Duration, whitelist map[string]bool) *PartyCoordinator {
 	// if no timeout is given, default to 10 seconds
 	if timeout.Nanoseconds() == 0 {
 		timeout = 10 * time.Second
 	}
+
 	pc := &PartyCoordinator{
-		logger:             log.With().Str("module", "party_coordinator").Logger(),
+		logger:             log.With().Str("module", "party_coordinator").Logger().Output(logFile),
 		host:               host,
 		stopChan:           make(chan struct{}),
 		timeout:            timeout,
