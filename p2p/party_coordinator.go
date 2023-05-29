@@ -588,3 +588,7 @@ func (pc *PartyCoordinator) JoinPartyWithRetry(msgID string, peers []string) ([]
 func (pc *PartyCoordinator) ReleaseStream(msgID string) {
 	pc.streamMgr.ReleaseStream(msgID)
 }
+
+func (pc *PartyCoordinator) SetTimeout(newTimeout time.Duration) {
+	pc.timeout = newTimeout
+}

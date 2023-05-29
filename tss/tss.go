@@ -165,10 +165,16 @@ func (t *TssServer) Stop() {
 func (t *TssServer) SetKeySignTimeouts(keySignTimeout, partyTimeout time.Duration) {
 	t.conf.KeySignTimeout = keySignTimeout
 	t.conf.PartyTimeout = partyTimeout
+	if t.partyCoordinator != nil {
+		t.partyCoordinator.SetTimeout(partyTimeout)
+	}
 }
 
 func (t *TssServer) SetPartyTimeout(partyTimeout time.Duration) {
 	t.conf.PartyTimeout = partyTimeout
+	if t.partyCoordinator != nil {
+		t.partyCoordinator.SetTimeout(partyTimeout)
+	}
 }
 
 func (t *TssServer) Config() common.TssConfig {
