@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -113,9 +115,15 @@ func NewTss(
 	if conf.EnableMonitor {
 		metrics.Enable()
 	}
+
+	outputFile, err := os.Create(filepath.Join(baseFolder, "tss.server.log"))
+	if err != nil {
+		return nil, err
+	}
+
 	tssServer := TssServer{
 		conf:              conf,
-		logger:            log.With().Str("module", "tss").Logger(),
+		logger:            log.With().Str("module", "tss").Logger().Output(outputFile),
 		p2pCommunication:  comm,
 		localNodePubKey:   pubKey,
 		preParams:         preParams,

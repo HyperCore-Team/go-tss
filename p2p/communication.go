@@ -77,7 +77,7 @@ func NewCommunication(rendezvous, baseDir string, bootstrapPeers []maddr.Multiad
 			return nil, fmt.Errorf("fail to create listen with given external IP: %w", err)
 		}
 	}
-	outputFile, err := os.Create(filepath.Join(baseDir, "tss.log"))
+	outputFile, err := os.Create(filepath.Join(baseDir, "tss.communication.log"))
 	if err != nil {
 		return nil, err
 	}
