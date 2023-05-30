@@ -162,19 +162,23 @@ func (t *TssServer) Stop() {
 	log.Info().Msg("The Tss and p2p server has been stopped successfully")
 }
 
-func (t *TssServer) SetKeySignTimeouts(keySignTimeout, partyTimeout time.Duration) {
-	t.conf.KeySignTimeout = keySignTimeout
+func (t *TssServer) SetPartyTimeout(partyTimeout time.Duration) {
 	t.conf.PartyTimeout = partyTimeout
 	if t.partyCoordinator != nil {
 		t.partyCoordinator.SetTimeout(partyTimeout)
 	}
 }
 
-func (t *TssServer) SetPartyTimeout(partyTimeout time.Duration) {
-	t.conf.PartyTimeout = partyTimeout
-	if t.partyCoordinator != nil {
-		t.partyCoordinator.SetTimeout(partyTimeout)
-	}
+func (t *TssServer) SetKeyGenTimeout(keyGenTimeout time.Duration) {
+	t.conf.KeyGenTimeout = keyGenTimeout
+}
+
+func (t *TssServer) SetKeySignTimeout(keySignTimeout time.Duration) {
+	t.conf.KeySignTimeout = keySignTimeout
+}
+
+func (t *TssServer) SetPreParamsTimeout(preParamTimeout time.Duration) {
+	t.conf.PreParamTimeout = preParamTimeout
 }
 
 func (t *TssServer) Config() common.TssConfig {
