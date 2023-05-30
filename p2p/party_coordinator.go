@@ -121,9 +121,11 @@ func (pc *PartyCoordinator) HandleStream(stream network.Stream) {
 	_, ok := pc.whitelist[peerID]
 	if !ok {
 		pc.logger.Debug().Msgf("Peer %s is not in our whitelist, will close connection!", peerID)
-		if err := stream.Close(); err == nil {
+		if err := stream.Close(); err != nil {
 			// todo, add mechanism to check that it is actually closed
-			pc.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err, peerID)
+			pc.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err.Error(), peerID)
+		} else {
+			pc.logger.Debug().Msgf("Closed stream with peer %s ", peerID)
 		}
 
 		return
@@ -168,9 +170,11 @@ func (pc *PartyCoordinator) HandleStreamWithLeader(stream network.Stream) {
 	_, ok := pc.whitelist[peerID]
 	if !ok {
 		pc.logger.Debug().Msgf("Peer %s is not in our whitelist, will close connection!", peerID)
-		if err := stream.Close(); err == nil {
+		if err := stream.Close(); err != nil {
 			// todo, add mechanism to check that it is actually closed
-			pc.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err, peerID)
+			pc.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err.Error(), peerID)
+		} else {
+			pc.logger.Debug().Msgf("Closed stream with peer %s ", peerID)
 		}
 
 		return

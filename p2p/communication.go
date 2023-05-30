@@ -212,9 +212,11 @@ func (c *Communication) handleStream(stream network.Stream) {
 		_, ok := c.whitelist[peerID]
 		if !ok {
 			c.logger.Debug().Msgf("Peer %s is not in our whitelist, will close connection!", peerID)
-			if err := stream.Close(); err == nil {
+			if err := stream.Close(); err != nil {
 				// todo, add mechanism to check that it is actually closed
-				c.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err, peerID)
+				c.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err.Error(), peerID)
+			} else {
+				c.logger.Debug().Msgf("Closed stream with peer %s ", peerID)
 			}
 
 			return
