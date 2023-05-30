@@ -65,7 +65,7 @@ func (s *SignatureNotifier) handleStream(stream network.Stream) {
 	_, ok := s.whitelist[peerID]
 	if !ok {
 		s.logger.Debug().Msgf("Peer %s is not in our whitelist, will close connection!", peerID)
-		if err := stream.Close(); err == nil {
+		if err := stream.Close(); err != nil {
 			// todo, add mechanism to check that it is actually closed
 			s.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err.Error(), peerID)
 		} else {
