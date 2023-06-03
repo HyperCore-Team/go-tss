@@ -185,8 +185,8 @@ func (t *TssServer) Config() common.TssConfig {
 	return t.conf
 }
 
-func (t *TssServer) GetWhitelist() map[string]bool {
-	return t.p2pCommunication.GetWhitelist()
+func (t *TssServer) GetWhitelists() (map[string]bool, map[string]bool, map[string]bool) {
+	return t.p2pCommunication.GetWhitelist(), t.partyCoordinator.GetWhitelist(), t.signatureNotifier.GetWhitelist()
 }
 
 func (t *TssServer) DeleteWhitelistEntry(pubKey string) {

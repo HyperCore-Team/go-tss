@@ -239,3 +239,7 @@ func (s *SignatureNotifier) WaitForSignature(messageID string, message [][]byte,
 func (s *SignatureNotifier) ReleaseStream(msgID string) {
 	s.streamMgr.ReleaseStream(msgID)
 }
+
+func (s *SignatureNotifier) GetWhitelist() map[string]bool {
+	return s.whitelist
+}

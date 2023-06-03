@@ -596,3 +596,7 @@ func (pc *PartyCoordinator) ReleaseStream(msgID string) {
 func (pc *PartyCoordinator) SetTimeout(newTimeout time.Duration) {
 	pc.timeout = newTimeout
 }
+
+func (pc *PartyCoordinator) GetWhitelist() map[string]bool {
+	return pc.whitelist
+}

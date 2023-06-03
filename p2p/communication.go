@@ -109,7 +109,6 @@ func (c *Communication) GetLocalPeerID() string {
 	return c.host.ID().String()
 }
 
-// GetWhitelist return the host
 func (c *Communication) GetWhitelist() map[string]bool {
 	return c.whitelist
 }

@@ -100,6 +100,8 @@ func (tKeyGen *TssKeyGen) GenerateNewKey(keygenReq keygen.Request) (*bcrypto.ECP
 	err1 := conversion.SetupIDMaps(partyIDMap, tKeyGen.tssCommonStruct.PartyIDtoP2PID)
 	err2 := conversion.SetupIDMaps(partyIDMap, blameMgr.PartyIDtoP2PID)
 	if err1 != nil || err2 != nil {
+		tKeyGen.logger.Error().Err(err1)
+		tKeyGen.logger.Error().Err(err2)
 		tKeyGen.logger.Error().Msgf("error in creating mapping between partyID and P2P ID")
 		return nil, err
 	}
