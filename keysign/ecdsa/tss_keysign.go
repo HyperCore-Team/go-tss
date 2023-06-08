@@ -169,7 +169,7 @@ func (tKeySign *TssKeySign) SignMessage(msgsToSign [][]byte, localStateItem stor
 	}
 
 	select {
-	case <-time.After(time.Second * 5):
+	case <-time.After(time.Second * 10):
 		close(tKeySign.commStopChan)
 	case <-tKeySign.tssCommonStruct.GetTaskDone():
 		close(tKeySign.commStopChan)

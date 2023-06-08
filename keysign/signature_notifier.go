@@ -125,7 +125,7 @@ func (s *SignatureNotifier) handleStream(stream network.Stream) {
 }
 
 func (s *SignatureNotifier) sendOneMsgToPeer(m *signatureItem) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
 	defer cancel()
 	stream, err := s.host.NewStream(ctx, m.peerID, signatureNotifierProtocol)
 	if err != nil {
@@ -161,7 +161,7 @@ func (s *SignatureNotifier) sendOneMsgToPeer(m *signatureItem) error {
 		return fmt.Errorf("fail to write message to stream:%w", err)
 	}
 	// we wait for 1 second to allow the receive notify us
-	if err := stream.SetReadDeadline(time.Now().Add(time.Second * 1)); nil != err {
+	if err := stream.SetReadDeadline(time.Now().Add(time.Second * 2)); nil != err {
 		return err
 	}
 	ret := make([]byte, 8)
