@@ -104,10 +104,10 @@ func (tKeyReGroup *TssKeyReGroup) NewPartyInit(req keyRegroup.Request) (*btss.Re
 	ctxOld := btss.NewPeerContext(oldPartiesID)
 	var newParams, oldParams *btss.ReSharingParameters
 	if newLocalPartyID != nil {
-		newParams = btss.NewReSharingParameters(btss.Edwards(), ctxOld, ctxNew, newLocalPartyID, len(req.OldPartyKeys), threshold, len(req.NewPartyKeys), threshold, false)
+		newParams = btss.NewReSharingParameters(btss.Edwards(), ctxOld, ctxNew, newLocalPartyID, len(req.OldPartyKeys), threshold, len(req.NewPartyKeys), threshold)
 	}
 	if oldLocalPartyID != nil {
-		oldParams = btss.NewReSharingParameters(btss.Edwards(), ctxOld, ctxNew, oldLocalPartyID, len(req.OldPartyKeys), threshold, len(req.NewPartyKeys), threshold, true)
+		oldParams = btss.NewReSharingParameters(btss.Edwards(), ctxOld, ctxNew, oldLocalPartyID, len(req.OldPartyKeys), threshold, len(req.NewPartyKeys), threshold)
 	}
 
 	return newParams, oldParams, oldPartiesID, newPartiesID, nil

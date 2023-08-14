@@ -124,7 +124,7 @@ func (tKeySign *EDDSATssKeySign) SignMessage(msgsToSign [][]byte, localStateItem
 		if err != nil {
 			return nil, fmt.Errorf("fail to unmarshal the local saved data")
 		}
-		keySignParty := signing.NewLocalParty(m.Bytes(), params, localData, outCh, endCh)
+		keySignParty := signing.NewLocalParty(big.NewInt(0).Set(m), params, localData, outCh, endCh)
 		keySignPartyMap.Store(moniker, keySignParty)
 	}
 
