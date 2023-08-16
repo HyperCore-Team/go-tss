@@ -3,7 +3,7 @@ package keysign
 import (
 	. "gopkg.in/check.v1"
 
-	"gitlab.com/thorchain/tss/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/conversion"
 )
 
 type NotifierTestSuite struct{}
@@ -33,4 +33,3 @@ func (NotifierTestSuite) TestNewNotifier(c *C) {
 	ch := n.GetResponseChannel()
 	c.Assert(ch, NotNil)
 }
-

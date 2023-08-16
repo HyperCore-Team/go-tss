@@ -1,4 +1,4 @@
-module gitlab.com/thorchain/tss/go-tss
+module github.com/HyperCore-Team/go-tss
 
 go 1.20
 

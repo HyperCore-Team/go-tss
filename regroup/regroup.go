@@ -1,10 +1,10 @@
 package keyRegroup
 
 import (
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/storage"
 	bcrypto "github.com/binance-chain/tss-lib/crypto"
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
-	"gitlab.com/thorchain/tss/go-tss/storage"
 )
 
 type TssKeyRegroup interface {

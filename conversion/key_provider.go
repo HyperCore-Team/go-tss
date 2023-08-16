@@ -13,7 +13,7 @@ import (
 	tcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/messages"
 )
 
 // GetPeerIDFromPubKey get the peer.ID from bech32 format node pub key

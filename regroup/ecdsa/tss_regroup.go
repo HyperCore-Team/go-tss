@@ -9,7 +9,7 @@ import (
 
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 
-	"gitlab.com/thorchain/tss/go-tss/regroup"
+	"github.com/HyperCore-Team/go-tss/regroup"
 
 	bcrypto "github.com/binance-chain/tss-lib/crypto"
 	bkg "github.com/binance-chain/tss-lib/ecdsa/keygen"
@@ -21,12 +21,12 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 
-	"gitlab.com/thorchain/tss/go-tss/blame"
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
-	"gitlab.com/thorchain/tss/go-tss/storage"
+	"github.com/HyperCore-Team/go-tss/blame"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/storage"
 )
 
 type TssKeyReGroup struct {

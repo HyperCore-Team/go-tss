@@ -2,7 +2,7 @@ package tests
 
 import (
 	"fmt"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/conversion"
 	"testing"
 )
 

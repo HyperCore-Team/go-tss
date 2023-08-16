@@ -12,9 +12,9 @@ import (
 
 	"github.com/ipfs/go-log"
 
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/keygen"
-	"gitlab.com/thorchain/tss/go-tss/tss"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/keygen"
+	"github.com/HyperCore-Team/go-tss/tss"
 )
 
 func Test_Whitelist_ECDSA_Keygen(t *testing.T) {
