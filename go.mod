@@ -3,7 +3,7 @@ module gitlab.com/thorchain/tss/go-tss
 go 1.20
 
 require (
-	github.com/binance-chain/tss-lib v0.0.0-20201118045712-70b2cb4bf916
+	github.com/binance-chain/tss-lib v1.5.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/cosmos/cosmos-sdk v0.45.1
