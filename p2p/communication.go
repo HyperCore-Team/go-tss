@@ -14,13 +14,13 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/protocol"
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	maddr "github.com/multiformats/go-multiaddr"
 	"github.com/rs/zerolog"
@@ -288,18 +288,26 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 	}
 
 	scalingLimits := rcmgr.DefaultLimits
-	scalingLimits.ProtocolPeerBaseLimit = rcmgr.BaseLimit{
+	protocolPeerBaseLimit := rcmgr.BaseLimit{
 		Streams:         512,
 		StreamsInbound:  256,
 		StreamsOutbound: 256,
 		Memory:          64 << 20,
 	}
-	scalingLimits.ProtocolPeerLimitIncrease = rcmgr.BaseLimitIncrease{
+	protocolPeerLimitIncrease := rcmgr.BaseLimitIncrease{
 		Streams:         64,
 		StreamsInbound:  64,
 		StreamsOutbound: 64,
 		Memory:          16 << 20,
 	}
+
+	scalingLimits.ProtocolPeerBaseLimit = protocolPeerBaseLimit
+	scalingLimits.ProtocolPeerLimitIncrease = protocolPeerLimitIncrease
+	for _, item := range []protocol.ID{joinPartyProtocol, joinPartyProtocolWithLeader, TSSProtocolID} {
+		scalingLimits.AddProtocolLimit(item, protocolPeerBaseLimit, protocolPeerLimitIncrease)
+		scalingLimits.AddProtocolPeerLimit(item, protocolPeerBaseLimit, protocolPeerLimitIncrease)
+	}
+
 	// Add limits around included libp2p protocols
 	libp2p.SetDefaultServiceLimits(&scalingLimits)
 	// Turn the scaling limits into a static set of limits using `.AutoScale`. This

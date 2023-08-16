@@ -7,7 +7,7 @@ import (
 
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/tendermint/btcd/btcec"
 	tcrypto "github.com/tendermint/tendermint/crypto"
