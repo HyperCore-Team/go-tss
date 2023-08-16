@@ -7,7 +7,7 @@ import (
 	"github.com/HyperCore-Team/go-tss/regroup/ecdsa"
 	"github.com/HyperCore-Team/go-tss/regroup/eddsa"
 	"github.com/HyperCore-Team/go-tss/storage"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	"github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
 	"time"
 
 	"github.com/HyperCore-Team/go-tss/blame"

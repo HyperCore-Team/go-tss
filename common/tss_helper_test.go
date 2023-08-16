@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"path"
 
-	btss "github.com/binance-chain/tss-lib/tss"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	. "gopkg.in/check.v1"

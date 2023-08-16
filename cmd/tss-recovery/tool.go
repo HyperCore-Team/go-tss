@@ -12,9 +12,9 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/HyperCore-Team/tss-lib/tss"
 
-	"github.com/binance-chain/tss-lib/eddsa/keygen"
+	"github.com/HyperCore-Team/tss-lib/eddsa/keygen"
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 )

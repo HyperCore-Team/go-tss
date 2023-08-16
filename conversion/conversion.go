@@ -15,8 +15,8 @@ import (
 	"github.com/tendermint/btcd/btcec"
 
 	"github.com/HyperCore-Team/go-tss/messages"
-	"github.com/binance-chain/tss-lib/crypto"
-	btss "github.com/binance-chain/tss-lib/tss"
+	"github.com/HyperCore-Team/tss-lib/crypto"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	crypto2 "github.com/libp2p/go-libp2p/core/crypto"

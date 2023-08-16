@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	tsslibcommon "github.com/binance-chain/tss-lib/common"
-	btss "github.com/binance-chain/tss-lib/tss"
+	tsslibcommon "github.com/HyperCore-Team/tss-lib/common"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
 	zlog "github.com/rs/zerolog/log"

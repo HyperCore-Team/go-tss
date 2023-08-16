@@ -4,7 +4,7 @@ import (
 	"github.com/HyperCore-Team/go-tss/common"
 	"github.com/HyperCore-Team/go-tss/p2p"
 	"github.com/HyperCore-Team/go-tss/storage"
-	bcrypto "github.com/binance-chain/tss-lib/crypto"
+	bcrypto "github.com/HyperCore-Team/tss-lib/crypto"
 )
 
 type TssKeyRegroup interface {

@@ -1,7 +1,7 @@
 package keysign
 
 import (
-	bc "github.com/binance-chain/tss-lib/common"
+	bc "github.com/HyperCore-Team/tss-lib/common"
 
 	"github.com/HyperCore-Team/go-tss/common"
 	"github.com/HyperCore-Team/go-tss/p2p"

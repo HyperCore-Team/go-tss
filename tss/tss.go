@@ -13,8 +13,8 @@ import (
 
 	keyRegroup "github.com/HyperCore-Team/go-tss/regroup"
 
-	bkeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
-	btsskeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
+	bkeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
+	btsskeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
 	"github.com/libp2p/go-libp2p/core/peer"

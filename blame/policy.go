@@ -6,7 +6,7 @@ import (
 
 	"github.com/HyperCore-Team/go-tss/conversion"
 	"github.com/HyperCore-Team/go-tss/messages"
-	btss "github.com/binance-chain/tss-lib/tss"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/libp2p/go-libp2p/core/peer"
 )

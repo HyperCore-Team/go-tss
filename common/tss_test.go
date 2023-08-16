@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	btsskeygen "github.com/binance-chain/tss-lib/eddsa/keygen"
-	btss "github.com/binance-chain/tss-lib/tss"
+	btsskeygen "github.com/HyperCore-Team/tss-lib/eddsa/keygen"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types/bech32/legacybech32"
 	tcrypto "github.com/tendermint/tendermint/crypto"

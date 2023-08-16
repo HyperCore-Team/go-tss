@@ -12,10 +12,10 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 
-	tsslibcommon "github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	signing "github.com/binance-chain/tss-lib/ecdsa/signing"
-	btss "github.com/binance-chain/tss-lib/tss"
+	tsslibcommon "github.com/HyperCore-Team/tss-lib/common"
+	"github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
+	signing "github.com/HyperCore-Team/tss-lib/ecdsa/signing"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"

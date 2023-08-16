@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	btsskeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
+	btsskeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
 	maddr "github.com/multiformats/go-multiaddr"
 
 	"github.com/HyperCore-Team/go-tss/common"

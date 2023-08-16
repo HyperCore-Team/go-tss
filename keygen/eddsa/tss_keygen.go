@@ -9,9 +9,9 @@ import (
 
 	"github.com/HyperCore-Team/go-tss/keygen"
 
-	bcrypto "github.com/binance-chain/tss-lib/crypto"
-	bkg "github.com/binance-chain/tss-lib/eddsa/keygen"
-	btss "github.com/binance-chain/tss-lib/tss"
+	bcrypto "github.com/HyperCore-Team/tss-lib/crypto"
+	bkg "github.com/HyperCore-Team/tss-lib/eddsa/keygen"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"

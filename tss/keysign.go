@@ -19,7 +19,7 @@ import (
 	"github.com/HyperCore-Team/go-tss/messages"
 	"github.com/HyperCore-Team/go-tss/p2p"
 	"github.com/HyperCore-Team/go-tss/storage"
-	tsslibcommon "github.com/binance-chain/tss-lib/common"
+	tsslibcommon "github.com/HyperCore-Team/tss-lib/common"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 

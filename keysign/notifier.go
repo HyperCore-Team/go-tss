@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/HyperCore-Team/go-tss/messages"
-	"github.com/binance-chain/tss-lib/common"
+	"github.com/HyperCore-Team/tss-lib/common"
 	"github.com/tendermint/btcd/btcec"
 	"golang.org/x/crypto/ed25519"
 	"math/big"
