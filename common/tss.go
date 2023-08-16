@@ -267,24 +267,29 @@ func (t *TssCommon) updateLocal(wireMsg *messages.WireMessage) error {
 			return errors.New("cannot find the party ")
 		}
 
+		if msg.Routing.From.Id != wireMsg.Routing.From.Id {
+			// this should never happen , if it happened , which ever party did it , should be blamed and slashed
+			t.logger.Error().Msgf("all messages in a batch sign should have the same routing ,batch routing party id: %s, however message routing:%s", msg.Routing.From, wireMsg.Routing.From)
+		}
+
 		localMsgParty := data.(btss.Party)
 		// we need the switch to find out who we send to as the party index maybe
 		// overwritten in regroup
-		switch msg.Routing.From.Moniker {
+		switch wireMsg.Routing.From.Moniker {
 		case OldParty:
-			partyID, ok = partyInfo.OldPartyIDMap[msg.Routing.From.Id]
+			partyID, ok = partyInfo.OldPartyIDMap[wireMsg.Routing.From.Id]
 			if !ok {
 				t.logger.Error().Msg("error in find the partyID")
 				return errors.New("cannot find the party to handle the message")
 			}
 		case NewParty:
-			partyID, ok = partyInfo.NewPartyIDMap[msg.Routing.From.Id]
+			partyID, ok = partyInfo.NewPartyIDMap[wireMsg.Routing.From.Id]
 			if !ok {
 				t.logger.Error().Msg("error in find the partyID")
 				return errors.New("cannot find the party to handle the message")
 			}
 		default:
-			partyID, ok = partyInfo.PartyIDMap[msg.Routing.From.Id]
+			partyID, ok = partyInfo.PartyIDMap[wireMsg.Routing.From.Id]
 			if !ok {
 				t.logger.Error().Msg("error in find the partyID")
 				return errors.New("cannot find the party to handle the message")
