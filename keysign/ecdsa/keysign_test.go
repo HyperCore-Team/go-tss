@@ -20,7 +20,7 @@ import (
 	"github.com/libp2p/go-libp2p-peerstore/addr"
 	zlog "github.com/rs/zerolog/log"
 
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/peer"
 	maddr "github.com/multiformats/go-multiaddr"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/secp256k1"

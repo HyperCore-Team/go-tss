@@ -12,9 +12,6 @@ import (
 	"github.com/HyperCore-Team/go-tss/keysign/ecdsa"
 	"github.com/HyperCore-Team/go-tss/keysign/eddsa"
 
-	tsslibcommon "github.com/binance-chain/tss-lib/common"
-	"github.com/libp2p/go-libp2p-core/peer"
-
 	"github.com/HyperCore-Team/go-tss/blame"
 	"github.com/HyperCore-Team/go-tss/common"
 	"github.com/HyperCore-Team/go-tss/conversion"
@@ -22,6 +19,8 @@ import (
 	"github.com/HyperCore-Team/go-tss/messages"
 	"github.com/HyperCore-Team/go-tss/p2p"
 	"github.com/HyperCore-Team/go-tss/storage"
+	tsslibcommon "github.com/binance-chain/tss-lib/common"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 func (t *TssServer) waitForSignatures(msgID, poolPubKey string, msgsToSign [][]byte, sigChan chan string, algo messages.Algo) (keysign.Response, error) {

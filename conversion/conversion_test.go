@@ -12,7 +12,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/btcsuite/btcd/btcec"
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/peer"
 	. "gopkg.in/check.v1"
 )
 
@@ -93,7 +93,6 @@ func (p *ConversionTestSuite) TestGetParties(c *C) {
 	c.Assert(err, NotNil)
 }
 
-//
 func (p *ConversionTestSuite) TestGetPeerIDFromPartyID(c *C) {
 	_, localParty, err := GetParties(p.testPubKeys, p.testPubKeys[0], true, "")
 	c.Assert(err, IsNil)

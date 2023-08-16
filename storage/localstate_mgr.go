@@ -15,8 +15,8 @@ import (
 
 	"github.com/HyperCore-Team/go-tss/messages"
 
-	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
+	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 
 	"github.com/HyperCore-Team/go-tss/conversion"

@@ -4,12 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	btss "github.com/binance-chain/tss-lib/tss"
-	mapset "github.com/deckarep/golang-set"
-	"github.com/libp2p/go-libp2p-core/peer"
-
 	"github.com/HyperCore-Team/go-tss/conversion"
 	"github.com/HyperCore-Team/go-tss/messages"
+	btss "github.com/binance-chain/tss-lib/tss"
+	mapset "github.com/deckarep/golang-set"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 func (m *Manager) tssTimeoutBlame(lastMessageType string, partyIDMap map[string]*btss.PartyID) ([]string, error) {

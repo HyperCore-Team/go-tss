@@ -4,9 +4,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/libp2p/go-libp2p-core/peer"
-
 	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 type PeerStatus struct {
