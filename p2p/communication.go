@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
+	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"os"
 	"path/filepath"
 	"sync"
@@ -285,10 +287,43 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 		return addrs
 	}
 
+	scalingLimits := rcmgr.DefaultLimits
+	scalingLimits.ProtocolPeerBaseLimit = rcmgr.BaseLimit{
+		Streams:         512,
+		StreamsInbound:  256,
+		StreamsOutbound: 256,
+		Memory:          64 << 20,
+	}
+	scalingLimits.ProtocolPeerLimitIncrease = rcmgr.BaseLimitIncrease{
+		Streams:         64,
+		StreamsInbound:  64,
+		StreamsOutbound: 64,
+		Memory:          16 << 20,
+	}
+	// Add limits around included libp2p protocols
+	libp2p.SetDefaultServiceLimits(&scalingLimits)
+	// Turn the scaling limits into a static set of limits using `.AutoScale`. This
+	// scales the limits proportional to your system memory.
+	limits := scalingLimits.AutoScale()
+	// The resource manager expects a limiter, se we create one from our limits.
+
+	limiter := rcmgr.NewFixedLimiter(limits)
+
+	m, err := rcmgr.NewResourceManager(limiter, rcmgr.WithAllowlistedMultiaddrs(c.bootstrapPeers), rcmgr.WithMetrics(NewResourceMetricReporter()))
+	if err != nil {
+		return err
+	}
+	cmgr, err := connmgr.NewConnManager(1024, 1500)
+	if err != nil {
+		return err
+	}
+
 	h, err := libp2p.New(ctx,
 		libp2p.ListenAddrs([]maddr.Multiaddr{c.listenAddr}...),
 		libp2p.Identity(p2pPriKey),
 		libp2p.AddrsFactory(addressFactory),
+		libp2p.ResourceManager(m),
+		libp2p.ConnectionManager(cmgr),
 	)
 	if err != nil {
 		return fmt.Errorf("fail to create p2p host: %w", err)
