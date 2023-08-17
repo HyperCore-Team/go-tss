@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	maddr "github.com/multiformats/go-multiaddr"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -15,11 +16,8 @@ import (
 
 	"github.com/HyperCore-Team/go-tss/messages"
 
-	"github.com/libp2p/go-libp2p-peerstore/addr"
-	"github.com/libp2p/go-libp2p/core/peer"
-	ma "github.com/multiformats/go-multiaddr"
-
 	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 // KeygenLocalState is a structure used to represent the data we saved locally for different keygen
@@ -35,8 +33,8 @@ type KeygenLocalState struct {
 type LocalStateManager interface {
 	SaveLocalState(state KeygenLocalState, algo messages.Algo) error
 	GetLocalState(pubKey string, algo messages.Algo) (KeygenLocalState, error)
-	SaveAddressBook(addressBook map[peer.ID]addr.AddrList) error
-	RetrieveP2PAddresses() (addr.AddrList, error)
+	SaveAddressBook(addressBook map[peer.ID][]maddr.Multiaddr) error
+	RetrieveP2PAddresses() ([]maddr.Multiaddr, error)
 }
 
 // FileStateMgr save the local state to file
@@ -118,7 +116,7 @@ func (fsm *FileStateMgr) GetLocalState(pubKey string, algo messages.Algo) (Keyge
 	return localState, nil
 }
 
-func (fsm *FileStateMgr) SaveAddressBook(address map[peer.ID]addr.AddrList) error {
+func (fsm *FileStateMgr) SaveAddressBook(address map[peer.ID][]maddr.Multiaddr) error {
 	if len(fsm.folder) < 1 {
 		return errors.New("base file path is invalid")
 	}
@@ -143,7 +141,7 @@ func (fsm *FileStateMgr) SaveAddressBook(address map[peer.ID]addr.AddrList) erro
 	return ioutil.WriteFile(filePathName, buf.Bytes(), 0o655)
 }
 
-func (fsm *FileStateMgr) RetrieveP2PAddresses() (addr.AddrList, error) {
+func (fsm *FileStateMgr) RetrieveP2PAddresses() ([]maddr.Multiaddr, error) {
 	if len(fsm.folder) < 1 {
 		return nil, errors.New("base file path is invalid")
 	}
@@ -161,13 +159,13 @@ func (fsm *FileStateMgr) RetrieveP2PAddresses() (addr.AddrList, error) {
 	}
 	fsm.writeLock.RUnlock()
 	data := strings.Split(string(input), "\n")
-	var peerAddresses []ma.Multiaddr
+	var peerAddresses []maddr.Multiaddr
 	for _, el := range data {
 		// we skip the empty entry
 		if len(el) == 0 {
 			continue
 		}
-		addr, err := ma.NewMultiaddr(el)
+		addr, err := maddr.NewMultiaddr(el)
 		if err != nil {
 			return nil, fmt.Errorf("invalid address in address book %w", err)
 		}

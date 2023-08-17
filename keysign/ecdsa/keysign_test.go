@@ -17,7 +17,6 @@ import (
 	tsslibcommon "github.com/HyperCore-Team/tss-lib/common"
 	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/ipfs/go-log"
-	"github.com/libp2p/go-libp2p-peerstore/addr"
 	zlog "github.com/rs/zerolog/log"
 
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -89,11 +88,11 @@ func (m *MockLocalStateManager) GetLocalState(pubKey string, algo messages.Algo)
 	return state, nil
 }
 
-func (s *MockLocalStateManager) SaveAddressBook(address map[peer.ID]addr.AddrList) error {
+func (s *MockLocalStateManager) SaveAddressBook(address map[peer.ID][]maddr.Multiaddr) error {
 	return nil
 }
 
-func (s *MockLocalStateManager) RetrieveP2PAddresses() (addr.AddrList, error) {
+func (s *MockLocalStateManager) RetrieveP2PAddresses() ([]maddr.Multiaddr, error) {
 	return nil, os.ErrNotExist
 }
 

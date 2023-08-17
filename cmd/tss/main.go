@@ -11,7 +11,6 @@ import (
 	"time"
 
 	golog "github.com/ipfs/go-log"
-	"github.com/libp2p/go-libp2p-peerstore/addr"
 	"gitlab.com/thorchain/binance-sdk/common/types"
 	"golang.org/x/term"
 
@@ -59,7 +58,7 @@ func main() {
 	}
 	// init tss module
 	tss, err := tss.NewTss(
-		addr.AddrList(p2pConf.BootstrapPeers),
+		[]maddr.Multiaddr(p2pConf.BootstrapPeers),
 		p2pConf.Port,
 		priKey,
 		p2pConf.RendezvousString,

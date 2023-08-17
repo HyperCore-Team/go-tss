@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	maddr "github.com/multiformats/go-multiaddr"
 	"os"
 	"path/filepath"
 	"sort"
@@ -15,7 +16,6 @@ import (
 
 	bkeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
 	btsskeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
-	"github.com/libp2p/go-libp2p-peerstore/addr"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -49,7 +49,7 @@ type TssServer struct {
 
 // NewTss create a new instance of Tss
 func NewTss(
-	cmdBootstrapPeers addr.AddrList,
+	cmdBootstrapPeers []maddr.Multiaddr,
 	p2pPort int,
 	priKey tcrypto.PrivKey,
 	rendezvous,
@@ -68,7 +68,7 @@ func NewTss(
 		return nil, fmt.Errorf("fail to create file state manager")
 	}
 
-	var bootstrapPeers addr.AddrList
+	var bootstrapPeers []maddr.Multiaddr
 	savedPeers, err := stateManager.RetrieveP2PAddresses()
 	if err != nil {
 		bootstrapPeers = cmdBootstrapPeers
