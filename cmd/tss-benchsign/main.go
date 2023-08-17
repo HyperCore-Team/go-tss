@@ -133,7 +133,7 @@ func runSign(dir string, t int) {
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), t)
-		P := signing.NewLocalParty(msg.Bytes(), params, keys[i], outCh, endCh).(*signing.LocalParty)
+		P := signing.NewLocalParty(big.NewInt(0).Set(msg), params, keys[i], outCh, endCh).(*signing.LocalParty)
 		parties = append(parties, P)
 		go func(P *signing.LocalParty) {
 			if err := P.Start(); err != nil {

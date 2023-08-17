@@ -15,7 +15,6 @@ import (
 	"github.com/HyperCore-Team/tss-lib/tss"
 
 	"github.com/HyperCore-Team/tss-lib/eddsa/keygen"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
@@ -53,10 +52,7 @@ func getTssPubKey(x, y *big.Int) (string, string, error) {
 		X:     x,
 		Y:     y,
 	}
-	pubKeyCompressed := coskey.PubKey{
-		Key: tssPubKey.SerializeCompressed(),
-	}
-	pubKey := base64.StdEncoding.EncodeToString(pubKeyCompressed.Bytes())
+	pubKey := base64.StdEncoding.EncodeToString(tssPubKey.SerializeCompressed())
 	addr := ""
 
 	return pubKey, addr, nil

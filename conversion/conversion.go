@@ -17,7 +17,6 @@ import (
 	"github.com/HyperCore-Team/go-tss/messages"
 	"github.com/HyperCore-Team/tss-lib/crypto"
 	btss "github.com/HyperCore-Team/tss-lib/tss"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	crypto2 "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -60,10 +59,7 @@ func PartyIDtoPubKey(party *btss.PartyID) (string, error) {
 		return "", errors.New("invalid party")
 	}
 	partyKeyBytes := party.GetKey()
-	pk := coskey.PubKey{
-		Key: partyKeyBytes,
-	}
-	pubKey := base64.StdEncoding.EncodeToString(pk.Bytes())
+	pubKey := base64.StdEncoding.EncodeToString(partyKeyBytes)
 	return pubKey, nil
 }
 

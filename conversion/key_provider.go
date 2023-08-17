@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -82,10 +81,7 @@ func GetPubKeyFromPeerID(pID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("faail to get pub key raw bytes: %w", err)
 	}
-	pubKey := coskey.PubKey{
-		Key: rawBytes,
-	}
-	key := base64.StdEncoding.EncodeToString(pubKey.Bytes())
+	key := base64.StdEncoding.EncodeToString(rawBytes)
 	return key, nil
 }
 
