@@ -8,33 +8,30 @@ require (
 	github.com/btcsuite/btcd v0.22.3
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/deckarep/golang-set v1.8.0
+	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.3
 	github.com/decred/dcrd/dcrec/secp256k1 v1.0.3
 	github.com/gorilla/mux v1.8.0
 	github.com/ipfs/go-log v1.0.5
-	github.com/libp2p/go-libp2p v0.29.2
+	github.com/libp2p/go-libp2p v0.29.1-0.20230817091653-9bd85029550a
+	github.com/libp2p/go-libp2p-kad-dht v0.24.3
+	github.com/libp2p/go-libp2p-testing v0.12.0
 	github.com/magiconair/properties v1.8.6
-	github.com/multiformats/go-multiaddr v0.10.1
+	github.com/multiformats/go-multiaddr v0.11.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.4.0
 	github.com/rs/zerolog v1.29.1
 	github.com/stretchr/testify v1.8.4
+	github.com/tendermint/btcd v0.1.1
 	github.com/tendermint/tendermint v0.34.14
 	gitlab.com/thorchain/binance-sdk v1.2.3-0.20210117202539-d569b6b9ba5d
 	go.uber.org/atomic v1.11.0
 	golang.org/x/crypto v0.12.0
+	golang.org/x/term v0.11.0
 	golang.org/x/text v0.12.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-)
-
-require (
-	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.3
-	github.com/libp2p/go-libp2p-kad-dht v0.24.3
-	github.com/libp2p/go-libp2p-testing v0.12.0
-	github.com/tendermint/btcd v0.1.1
-	golang.org/x/term v0.11.0
 )
 
 require (
@@ -122,9 +119,8 @@ require (
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
-	github.com/quic-go/qtls-go1-19 v0.3.3 // indirect
-	github.com/quic-go/qtls-go1-20 v0.2.3 // indirect
-	github.com/quic-go/quic-go v0.36.4 // indirect
+	github.com/quic-go/qtls-go1-20 v0.3.1 // indirect
+	github.com/quic-go/quic-go v0.37.5 // indirect
 	github.com/quic-go/webtransport-go v0.5.3 // indirect
 	github.com/raulk/go-watchdog v1.3.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect

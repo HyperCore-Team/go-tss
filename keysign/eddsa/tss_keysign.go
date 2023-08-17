@@ -222,7 +222,7 @@ func (tKeySign *EDDSATssKeySign) processKeySign(reqNum int, errChan chan struct{
 					tKeySign.logger.Error().Err(err).Msg("error in get unicast blame")
 				}
 				if len(blameNodesUnicast) > 0 && len(blameNodesUnicast) <= threshold {
-					blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true)
+					blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true, "KeySignTimeout broadcast")
 				}
 			} else {
 				blameNodesUnicast, err := blameMgr.GetUnicastBlame(conversion.GetPreviousKeySignUicast(lastMsg.Type()))
@@ -230,7 +230,7 @@ func (tKeySign *EDDSATssKeySign) processKeySign(reqNum int, errChan chan struct{
 					tKeySign.logger.Error().Err(err).Msg("error in get unicast blame")
 				}
 				if len(blameNodesUnicast) > 0 && len(blameNodesUnicast) <= threshold {
-					blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true)
+					blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true, "KeySignTimeout unicast")
 				}
 			}
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"os"
@@ -16,7 +17,6 @@ import (
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/crypto"
-	"github.com/libp2p/go-libp2p/core/discovery"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -328,7 +328,7 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 		return err
 	}
 
-	h, err := libp2p.New(ctx,
+	h, err := libp2p.New(
 		libp2p.ListenAddrs([]maddr.Multiaddr{c.listenAddr}...),
 		libp2p.Identity(p2pPriKey),
 		libp2p.AddrsFactory(addressFactory),
@@ -369,8 +369,9 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 
 	// We use a rendezvous point "meet me here" to announce our location.
 	// This is like telling your friends to meet you at the Eiffel Tower.
-	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
-	discovery.Advertise(ctx, routingDiscovery, c.rendezvous)
+	routingDiscovery := routing.NewRoutingDiscovery(kademliaDHT)
+	// todo handle ttl?
+	routingDiscovery.Advertise(ctx, c.rendezvous)
 	err = c.bootStrapConnectivityCheck()
 	if err != nil {
 		return err
