@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"github.com/HyperCore-Team/go-tss/messages"
@@ -11,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/client/input"
 	golog "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
 	"gitlab.com/thorchain/binance-sdk/common/types"
+	"golang.org/x/term"
 
 	"github.com/HyperCore-Team/go-tss/common"
 	"github.com/HyperCore-Team/go-tss/conversion"
@@ -48,13 +47,13 @@ func main() {
 		types.Network = types.TestNetwork
 	}
 	// Read stdin for the private key
-	inBuf := bufio.NewReader(os.Stdin)
-	priKeyBytes, err := input.GetPassword("input node secret key:", inBuf)
+	fmt.Println("input node secret key:")
+	priKeyBytes, err := term.ReadPassword(syscall.Stdin)
 	if err != nil {
 		fmt.Printf("error in get the secret key: %s\n", err.Error())
 		return
 	}
-	priKey, err := conversion.GetPriKey(priKeyBytes)
+	priKey, err := conversion.GetPriKey(string(priKeyBytes))
 	if err != nil {
 		log.Fatal(err)
 	}

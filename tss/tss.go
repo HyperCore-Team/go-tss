@@ -15,7 +15,6 @@ import (
 
 	bkeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
 	btsskeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
 	"github.com/rs/zerolog"
@@ -61,11 +60,8 @@ func NewTss(
 	algo messages.Algo,
 	pubKeyWhitelist map[string]bool,
 ) (*TssServer, error) {
-	pk := coskey.PubKey{
-		Key: priKey.PubKey().Bytes()[:],
-	}
-
-	pubKey := base64.StdEncoding.EncodeToString(pk.Bytes())
+	pkBytes := priKey.PubKey().Bytes()[:]
+	pubKey := base64.StdEncoding.EncodeToString(pkBytes)
 
 	stateManager, err := storage.NewFileStateMgr(baseFolder)
 	if err != nil {

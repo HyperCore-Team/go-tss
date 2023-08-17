@@ -11,7 +11,6 @@ import (
 
 	"github.com/HyperCore-Team/tss-lib/crypto"
 	"github.com/btcsuite/btcd/btcec"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/libp2p/go-libp2p-core/peer"
 	. "gopkg.in/check.v1"
 )
@@ -68,18 +67,12 @@ func (p *ConversionTestSuite) TestAccPubKeysFromPartyIDs(c *C) {
 func (p *ConversionTestSuite) TestGetParties(c *C) {
 	partiesID, localParty, err := GetParties(p.testPubKeys, p.testPubKeys[0], false, "")
 	c.Assert(err, IsNil)
-	pk := coskey.PubKey{
-		Key: localParty.Key[:],
-	}
 	c.Assert(err, IsNil)
-	got := base64.StdEncoding.EncodeToString(pk.Bytes())
+	got := base64.StdEncoding.EncodeToString(localParty.Key[:])
 	c.Assert(got, Equals, p.testPubKeys[0])
 	var gotKeys []string
 	for _, val := range partiesID {
-		pk := coskey.PubKey{
-			Key: val.Key,
-		}
-		got := base64.StdEncoding.EncodeToString(pk.Bytes())
+		got := base64.StdEncoding.EncodeToString(val.Key)
 		gotKeys = append(gotKeys, got)
 	}
 	sort.Strings(gotKeys)
@@ -190,10 +183,7 @@ func (p *ConversionTestSuite) TestSetupPartyIDMap(c *C) {
 	partyIDMap := SetupPartyIDMap(partiesID)
 	var pubKeys []string
 	for _, el := range partyIDMap {
-		pk := coskey.PubKey{
-			Key: el.Key,
-		}
-		got := base64.StdEncoding.EncodeToString(pk.Bytes())
+		got := base64.StdEncoding.EncodeToString(el.Key)
 		pubKeys = append(pubKeys, got)
 	}
 	sort.Strings(pubKeys)
