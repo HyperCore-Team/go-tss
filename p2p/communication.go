@@ -316,10 +316,12 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 	// scales the limits proportional to your system memory.
 	limits := scalingLimits.AutoScale()
 	// The resource manager expects a limiter, se we create one from our limits.
-
 	limiter := rcmgr.NewFixedLimiter(limits)
 
-	m, err := rcmgr.NewResourceManager(limiter, rcmgr.WithAllowlistedMultiaddrs(c.bootstrapPeers), rcmgr.WithMetrics(NewResourceMetricReporter()))
+	resourceMetric := NewResourceMetricReporter()
+	resourceMetric.AllowProtocol(joinPartyProtocol)
+	resourceMetric.AllowProtocol(joinPartyProtocolWithLeader)
+	m, err := rcmgr.NewResourceManager(limiter, rcmgr.WithAllowlistedMultiaddrs(c.bootstrapPeers), rcmgr.WithMetrics(resourceMetric))
 	if err != nil {
 		return err
 	}
