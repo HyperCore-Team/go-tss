@@ -289,15 +289,15 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 
 	scalingLimits := rcmgr.DefaultLimits
 	protocolPeerBaseLimit := rcmgr.BaseLimit{
-		Streams:         512,
-		StreamsInbound:  256,
-		StreamsOutbound: 256,
+		Streams:         512 * 2,
+		StreamsInbound:  256 * 2,
+		StreamsOutbound: 256 * 2,
 		Memory:          64 << 20,
 	}
 	protocolPeerLimitIncrease := rcmgr.BaseLimitIncrease{
-		Streams:         64,
-		StreamsInbound:  64,
-		StreamsOutbound: 64,
+		Streams:         64 * 2,
+		StreamsInbound:  64 * 2,
+		StreamsOutbound: 64 * 2,
 		Memory:          16 << 20,
 	}
 
@@ -318,10 +318,7 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 	// The resource manager expects a limiter, se we create one from our limits.
 	limiter := rcmgr.NewFixedLimiter(limits)
 
-	resourceMetric := NewResourceMetricReporter()
-	resourceMetric.AllowProtocol(joinPartyProtocol)
-	resourceMetric.AllowProtocol(joinPartyProtocolWithLeader)
-	m, err := rcmgr.NewResourceManager(limiter, rcmgr.WithAllowlistedMultiaddrs(c.bootstrapPeers), rcmgr.WithMetrics(resourceMetric))
+	m, err := rcmgr.NewResourceManager(limiter, rcmgr.WithAllowlistedMultiaddrs(c.bootstrapPeers), rcmgr.WithMetrics(NewResourceMetricReporter()))
 	if err != nil {
 		return err
 	}
