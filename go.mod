@@ -3,7 +3,7 @@ module github.com/HyperCore-Team/go-tss
 go 1.20
 
 require (
-	github.com/HyperCore-Team/tss-lib v1.3.4-0.20230816213927-d92c537775e8
+	github.com/HyperCore-Team/tss-lib v1.3.4-0.20230823144412-dc34f69450a5
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/btcsuite/btcd v0.22.3
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
