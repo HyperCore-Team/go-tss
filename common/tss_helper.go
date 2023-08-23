@@ -303,10 +303,15 @@ func GetMsgRound(msg []byte, partyID *btss.PartyID, isBroadcast bool) (blame.Rou
 			Index:    4,
 			RoundMsg: messages.KEYREGROUP3b,
 		}, nil
-	case *resharing.DGRound4Message:
+	case *resharing.DGRound4Message1:
 		return blame.RoundInfo{
 			Index:    5,
-			RoundMsg: messages.KEYREGROUP4,
+			RoundMsg: messages.KEYREGROUP4a,
+		}, nil
+	case *resharing.DGRound4Message2:
+		return blame.RoundInfo{
+			Index:    6,
+			RoundMsg: messages.KEYREGROUP4b,
 		}, nil
 
 	// EDDSA -- Signing
