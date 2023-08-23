@@ -312,16 +312,7 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 
 	// Add limits around included libp2p protocols
 	libp2p.SetDefaultServiceLimits(&scalingLimits)
-	// Turn the scaling limits into a static set of limits using `.AutoScale`. This
-	// scales the limits proportional to your system memory.
-	//limits := scalingLimits.AutoScale()
-	// The resource manager expects a limiter, se we create one from our limits.
-	//limiter := rcmgr.NewFixedLimiter(limits)
 
-	//m, err := rcmgr.NewResourceManager(limiter, rcmgr.WithAllowlistedMultiaddrs(c.bootstrapPeers), rcmgr.WithMetrics(NewResourceMetricReporter()))
-	//if err != nil {
-	//	return err
-	//}
 	cmgr, err := connmgr.NewConnManager(1024, 1500)
 	if err != nil {
 		return err
@@ -331,7 +322,6 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 		libp2p.ListenAddrs([]maddr.Multiaddr{c.listenAddr}...),
 		libp2p.Identity(p2pPriKey),
 		libp2p.AddrsFactory(addressFactory),
-		//libp2p.ResourceManager(m),
 		libp2p.ConnectionManager(cmgr),
 	)
 	if err != nil {
