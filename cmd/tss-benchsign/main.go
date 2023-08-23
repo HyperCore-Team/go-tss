@@ -11,12 +11,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/eddsa/keygen"
-	"github.com/binance-chain/tss-lib/eddsa/signing"
-	"github.com/binance-chain/tss-lib/test"
-	"github.com/binance-chain/tss-lib/tss"
-	btss "github.com/binance-chain/tss-lib/tss"
+	"github.com/HyperCore-Team/tss-lib/common"
+	"github.com/HyperCore-Team/tss-lib/eddsa/keygen"
+	"github.com/HyperCore-Team/tss-lib/eddsa/signing"
+	"github.com/HyperCore-Team/tss-lib/test"
+	"github.com/HyperCore-Team/tss-lib/tss"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/ipfs/go-log"
@@ -133,7 +133,7 @@ func runSign(dir string, t int) {
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), t)
-		P := signing.NewLocalParty(msg.Bytes(), params, keys[i], outCh, endCh).(*signing.LocalParty)
+		P := signing.NewLocalParty(big.NewInt(0).Set(msg), params, keys[i], outCh, endCh).(*signing.LocalParty)
 		parties = append(parties, P)
 		go func(P *signing.LocalParty) {
 			if err := P.Start(); err != nil {

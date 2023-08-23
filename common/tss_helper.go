@@ -13,22 +13,22 @@ import (
 	"os"
 	"strings"
 
-	"github.com/binance-chain/tss-lib/ecdsa/resharing"
-	eddsaResharing "github.com/binance-chain/tss-lib/eddsa/resharing"
+	"github.com/HyperCore-Team/tss-lib/ecdsa/resharing"
+	eddsaResharing "github.com/HyperCore-Team/tss-lib/eddsa/resharing"
 
-	ecdsaKeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
-	ecdsaKeySign "github.com/binance-chain/tss-lib/ecdsa/signing"
-	eddsaKeygen "github.com/binance-chain/tss-lib/eddsa/keygen"
-	eddsaSigning "github.com/binance-chain/tss-lib/eddsa/signing"
-	"github.com/binance-chain/tss-lib/tss"
-	btss "github.com/binance-chain/tss-lib/tss"
-	"github.com/libp2p/go-libp2p-core/peer"
+	ecdsaKeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
+	ecdsaKeySign "github.com/HyperCore-Team/tss-lib/ecdsa/signing"
+	eddsaKeygen "github.com/HyperCore-Team/tss-lib/eddsa/keygen"
+	eddsaSigning "github.com/HyperCore-Team/tss-lib/eddsa/signing"
+	"github.com/HyperCore-Team/tss-lib/tss"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 
-	"gitlab.com/thorchain/tss/go-tss/blame"
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/blame"
+	"github.com/HyperCore-Team/go-tss/messages"
 )
 
 func Contains(s []*btss.PartyID, e *btss.PartyID) bool {

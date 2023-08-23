@@ -7,26 +7,26 @@ import (
 	"sync"
 	"time"
 
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	"github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
 
-	"gitlab.com/thorchain/tss/go-tss/regroup"
+	"github.com/HyperCore-Team/go-tss/regroup"
 
-	bcrypto "github.com/binance-chain/tss-lib/crypto"
-	bkg "github.com/binance-chain/tss-lib/ecdsa/keygen"
-	bkr "github.com/binance-chain/tss-lib/ecdsa/resharing"
-	btss "github.com/binance-chain/tss-lib/tss"
+	bcrypto "github.com/HyperCore-Team/tss-lib/crypto"
+	bkg "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
+	bkr "github.com/HyperCore-Team/tss-lib/ecdsa/resharing"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 
 	"github.com/btcsuite/btcd/btcec"
 
-	"gitlab.com/thorchain/tss/go-tss/blame"
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
-	"gitlab.com/thorchain/tss/go-tss/storage"
+	"github.com/HyperCore-Team/go-tss/blame"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/storage"
 )
 
 type TssKeyReGroup struct {
@@ -109,10 +109,10 @@ func (tKeyReGroup *TssKeyReGroup) NewPartyInit(req keyRegroup.Request) (*btss.Re
 	ctxOld := btss.NewPeerContext(oldPartiesID)
 	var newParams, oldParams *btss.ReSharingParameters
 	if newLocalPartyID != nil {
-		newParams = btss.NewReSharingParameters(btcec.S256(), ctxOld, ctxNew, newLocalPartyID, len(req.OldPartyKeys), threshold, len(req.NewPartyKeys), threshold, false)
+		newParams = btss.NewReSharingParameters(btcec.S256(), ctxOld, ctxNew, newLocalPartyID, len(req.OldPartyKeys), threshold, len(req.NewPartyKeys), threshold)
 	}
 	if oldLocalPartyID != nil {
-		oldParams = btss.NewReSharingParameters(btcec.S256(), ctxOld, ctxNew, oldLocalPartyID, len(req.OldPartyKeys), threshold, len(req.NewPartyKeys), threshold, true)
+		oldParams = btss.NewReSharingParameters(btcec.S256(), ctxOld, ctxNew, oldLocalPartyID, len(req.OldPartyKeys), threshold, len(req.NewPartyKeys), threshold)
 	}
 
 	return newParams, oldParams, oldPartiesID, newPartiesID, nil
@@ -288,7 +288,7 @@ func (tKeyReGroup *TssKeyReGroup) processKeyReGroup(errChan chan struct{},
 			}
 
 			if len(blameNodesUnicast) > 0 && len(blameNodesUnicast) <= threshold {
-				blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true)
+				blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true, "KeyRegroupTimeout")
 			}
 			blameNodesBroadcast, err := blameMgr.GetBroadcastBlame(lastMsg.Type())
 			if err != nil {

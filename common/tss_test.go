@@ -6,23 +6,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	btsskeygen "github.com/binance-chain/tss-lib/eddsa/keygen"
-	btss "github.com/binance-chain/tss-lib/tss"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	btsskeygen "github.com/HyperCore-Team/tss-lib/eddsa/keygen"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	. "gopkg.in/check.v1"
 
-	"gitlab.com/thorchain/tss/go-tss/blame"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/blame"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/p2p"
 )
 
 var (
@@ -357,12 +356,12 @@ func (t *TssTestSuite) testVerMsgAndUpdate(c *C, tssCommonStruct *TssCommon, sen
 
 func findSender(arr []*btss.PartyID) *btss.PartyID {
 	for _, el := range arr {
-		pk := coskey.PubKey{
-			Key: el.GetKey()[:],
-		}
-		out, _ := sdk.Bech32ifyPubKey(sdk.Bech32PubKeyTypeAccPub, &pk)
-		if out == testSenderPubKey {
-			return el
+		pk, err := edwards.ParsePubKey(el.GetKey()[:])
+		if err != nil {
+			out := base64.StdEncoding.EncodeToString(pk.Serialize())
+			if out == testSenderPubKey {
+				return el
+			}
 		}
 	}
 	return nil
@@ -381,9 +380,8 @@ func (t *TssTestSuite) TestProcessVerMessage(c *C) {
 }
 
 func (t *TssTestSuite) TestTssCommon(c *C) {
-	pk, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeAccPub, "thorpub1addwnpepqtdklw8tf3anjz7nn5fly3uvq2e67w2apn560s4smmrt9e3x52nt2svmmu3")
-	c.Assert(err, IsNil)
-	peerID, err := conversion.GetPeerIDFromEDDSAPubKey(pk.Bytes())
+	publicKey := ed25519.GenPrivKey().PubKey()
+	peerID, err := conversion.GetPeerIDFromEDDSAPubKey(publicKey.Bytes())
 	c.Assert(err, IsNil)
 	broadcastChannel := make(chan *messages.BroadcastMsgChan)
 	sk := ed25519.GenPrivKey()

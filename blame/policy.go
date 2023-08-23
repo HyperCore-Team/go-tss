@@ -4,12 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	btss "github.com/binance-chain/tss-lib/tss"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/messages"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	mapset "github.com/deckarep/golang-set"
-	"github.com/libp2p/go-libp2p-core/peer"
-
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 func (m *Manager) tssTimeoutBlame(lastMessageType string, partyIDMap map[string]*btss.PartyID) ([]string, error) {
@@ -185,7 +184,6 @@ func (m *Manager) TssMissingShareBlame(rounds int, algo messages.Algo) ([]Node, 
 				m.logger.Error().Msgf("fail to find the algorithm for this keygen/keysign, set unicast as false by default")
 				isUnicast = false
 			}
-
 
 			// we add our own id to avoid blame ourselves
 			// since all the local parties have the same id, so we just need to take one of them to get the peer

@@ -8,15 +8,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 const (
 	LengthHeader        = 4 // LengthHeader represent how many bytes we used as header
-	TimeoutReadPayload  = time.Second * 17
-	TimeoutWritePayload = time.Second * 17
+	TimeoutReadPayload  = time.Second * 20
+	TimeoutWritePayload = time.Second * 20
 	MaxPayload          = 20000000 // 20M
 )
 

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	maddr "github.com/multiformats/go-multiaddr"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,25 +12,23 @@ import (
 	"sync"
 	"time"
 
-	keyRegroup "gitlab.com/thorchain/tss/go-tss/regroup"
+	keyRegroup "github.com/HyperCore-Team/go-tss/regroup"
 
-	bkeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
-	btsskeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-peerstore/addr"
+	bkeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
+	btsskeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/keygen"
-	"gitlab.com/thorchain/tss/go-tss/keysign"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/monitor"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
-	"gitlab.com/thorchain/tss/go-tss/storage"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/keygen"
+	"github.com/HyperCore-Team/go-tss/keysign"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/monitor"
+	"github.com/HyperCore-Team/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/storage"
 )
 
 // TssServer is the structure that can provide all keysign and key gen features
@@ -50,7 +49,7 @@ type TssServer struct {
 
 // NewTss create a new instance of Tss
 func NewTss(
-	cmdBootstrapPeers addr.AddrList,
+	cmdBootstrapPeers []maddr.Multiaddr,
 	p2pPort int,
 	priKey tcrypto.PrivKey,
 	rendezvous,
@@ -61,18 +60,15 @@ func NewTss(
 	algo messages.Algo,
 	pubKeyWhitelist map[string]bool,
 ) (*TssServer, error) {
-	pk := coskey.PubKey{
-		Key: priKey.PubKey().Bytes()[:],
-	}
-
-	pubKey := base64.StdEncoding.EncodeToString(pk.Bytes())
+	pkBytes := priKey.PubKey().Bytes()[:]
+	pubKey := base64.StdEncoding.EncodeToString(pkBytes)
 
 	stateManager, err := storage.NewFileStateMgr(baseFolder)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create file state manager")
 	}
 
-	var bootstrapPeers addr.AddrList
+	var bootstrapPeers []maddr.Multiaddr
 	savedPeers, err := stateManager.RetrieveP2PAddresses()
 	if err != nil {
 		bootstrapPeers = cmdBootstrapPeers

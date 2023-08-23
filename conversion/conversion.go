@@ -14,14 +14,12 @@ import (
 
 	"github.com/tendermint/btcd/btcec"
 
-	"github.com/binance-chain/tss-lib/crypto"
-	btss "github.com/binance-chain/tss-lib/tss"
-	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/tss-lib/crypto"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
-	crypto2 "github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/peer"
-
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	crypto2 "github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 // GetPeerIDFromSecp256PubKey convert the given pubkey into a peer.ID
@@ -61,10 +59,7 @@ func PartyIDtoPubKey(party *btss.PartyID) (string, error) {
 		return "", errors.New("invalid party")
 	}
 	partyKeyBytes := party.GetKey()
-	pk := coskey.PubKey{
-		Key: partyKeyBytes,
-	}
-	pubKey := base64.StdEncoding.EncodeToString(pk.Bytes())
+	pubKey := base64.StdEncoding.EncodeToString(partyKeyBytes)
 	return pubKey, nil
 }
 

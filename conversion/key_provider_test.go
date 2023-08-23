@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/messages"
 
 	"github.com/stretchr/testify/assert"
 	. "gopkg.in/check.v1"

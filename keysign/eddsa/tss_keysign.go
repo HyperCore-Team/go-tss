@@ -11,21 +11,21 @@ import (
 	"sync"
 	"time"
 
-	tsslibcommon "github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/eddsa/keygen"
-	signing "github.com/binance-chain/tss-lib/eddsa/signing"
-	btss "github.com/binance-chain/tss-lib/tss"
+	tsslibcommon "github.com/HyperCore-Team/tss-lib/common"
+	"github.com/HyperCore-Team/tss-lib/eddsa/keygen"
+	signing "github.com/HyperCore-Team/tss-lib/eddsa/signing"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 	"go.uber.org/atomic"
 
-	"gitlab.com/thorchain/tss/go-tss/blame"
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
-	"gitlab.com/thorchain/tss/go-tss/storage"
+	"github.com/HyperCore-Team/go-tss/blame"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/storage"
 )
 
 type EDDSATssKeySign struct {
@@ -124,7 +124,7 @@ func (tKeySign *EDDSATssKeySign) SignMessage(msgsToSign [][]byte, localStateItem
 		if err != nil {
 			return nil, fmt.Errorf("fail to unmarshal the local saved data")
 		}
-		keySignParty := signing.NewLocalParty(m.Bytes(), params, localData, outCh, endCh)
+		keySignParty := signing.NewLocalParty(big.NewInt(0).Set(m), params, localData, outCh, endCh)
 		keySignPartyMap.Store(moniker, keySignParty)
 	}
 
@@ -222,7 +222,7 @@ func (tKeySign *EDDSATssKeySign) processKeySign(reqNum int, errChan chan struct{
 					tKeySign.logger.Error().Err(err).Msg("error in get unicast blame")
 				}
 				if len(blameNodesUnicast) > 0 && len(blameNodesUnicast) <= threshold {
-					blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true)
+					blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true, "KeySignTimeout broadcast")
 				}
 			} else {
 				blameNodesUnicast, err := blameMgr.GetUnicastBlame(conversion.GetPreviousKeySignUicast(lastMsg.Type()))
@@ -230,7 +230,7 @@ func (tKeySign *EDDSATssKeySign) processKeySign(reqNum int, errChan chan struct{
 					tKeySign.logger.Error().Err(err).Msg("error in get unicast blame")
 				}
 				if len(blameNodesUnicast) > 0 && len(blameNodesUnicast) <= threshold {
-					blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true)
+					blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true, "KeySignTimeout unicast")
 				}
 			}
 

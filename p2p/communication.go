@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
+	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"os"
 	"path/filepath"
 	"sync"
@@ -12,19 +15,18 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/protocol"
-	discovery "github.com/libp2p/go-libp2p-discovery"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	maddr "github.com/multiformats/go-multiaddr"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/messages"
 )
 
 var (
@@ -285,10 +287,42 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 		return addrs
 	}
 
-	h, err := libp2p.New(ctx,
+	scalingLimits := rcmgr.DefaultLimits
+	protocolPeerBaseLimit := rcmgr.BaseLimit{
+		Streams:         512,
+		StreamsInbound:  256,
+		StreamsOutbound: 256,
+		Memory:          64 << 20,
+	}
+	protocolPeerLimitIncrease := rcmgr.BaseLimitIncrease{
+		Streams:         64,
+		StreamsInbound:  64,
+		StreamsOutbound: 64,
+		Memory:          16 << 20,
+	}
+
+	scalingLimits.ProtocolBaseLimit = protocolPeerBaseLimit
+	scalingLimits.ProtocolLimitIncrease = protocolPeerLimitIncrease
+	scalingLimits.ProtocolPeerBaseLimit = protocolPeerBaseLimit
+	scalingLimits.ProtocolPeerLimitIncrease = protocolPeerLimitIncrease
+	for _, item := range []protocol.ID{joinPartyProtocol, joinPartyProtocolWithLeader, TSSProtocolID} {
+		scalingLimits.AddProtocolLimit(item, protocolPeerBaseLimit, protocolPeerLimitIncrease)
+		scalingLimits.AddProtocolPeerLimit(item, protocolPeerBaseLimit, protocolPeerLimitIncrease)
+	}
+
+	// Add limits around included libp2p protocols
+	libp2p.SetDefaultServiceLimits(&scalingLimits)
+
+	cmgr, err := connmgr.NewConnManager(1024, 1500)
+	if err != nil {
+		return err
+	}
+
+	h, err := libp2p.New(
 		libp2p.ListenAddrs([]maddr.Multiaddr{c.listenAddr}...),
 		libp2p.Identity(p2pPriKey),
 		libp2p.AddrsFactory(addressFactory),
+		libp2p.ConnectionManager(cmgr),
 	)
 	if err != nil {
 		return fmt.Errorf("fail to create p2p host: %w", err)
@@ -324,8 +358,9 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 
 	// We use a rendezvous point "meet me here" to announce our location.
 	// This is like telling your friends to meet you at the Eiffel Tower.
-	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
-	discovery.Advertise(ctx, routingDiscovery, c.rendezvous)
+	routingDiscovery := routing.NewRoutingDiscovery(kademliaDHT)
+	// todo handle ttl?
+	routingDiscovery.Advertise(ctx, c.rendezvous)
 	err = c.bootStrapConnectivityCheck()
 	if err != nil {
 		return err

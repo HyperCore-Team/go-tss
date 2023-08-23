@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"gitlab.com/thorchain/tss/go-tss/regroup/ecdsa"
-	"gitlab.com/thorchain/tss/go-tss/regroup/eddsa"
-	"gitlab.com/thorchain/tss/go-tss/storage"
+	"github.com/HyperCore-Team/go-tss/regroup/ecdsa"
+	"github.com/HyperCore-Team/go-tss/regroup/eddsa"
+	"github.com/HyperCore-Team/go-tss/storage"
+	"github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
 	"time"
 
-	"gitlab.com/thorchain/tss/go-tss/blame"
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/regroup"
+	"github.com/HyperCore-Team/go-tss/blame"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/regroup"
 )
 
 func (t *TssServer) KeyRegroup(req keyRegroup.Request) (keyRegroup.Response, error) {
