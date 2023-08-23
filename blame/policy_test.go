@@ -5,23 +5,28 @@ import (
 	"sync"
 	"testing"
 
-	bkg "github.com/binance-chain/tss-lib/ecdsa/keygen"
-	btss "github.com/binance-chain/tss-lib/tss"
-	"github.com/libp2p/go-libp2p-core/peer"
+	bkg "github.com/HyperCore-Team/tss-lib/eddsa/keygen"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
+	"github.com/libp2p/go-libp2p/core/peer"
 	. "gopkg.in/check.v1"
 
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/messages"
 )
 
 var (
-	testPubKeys = [...]string{"thorpub1addwnpepqtdklw8tf3anjz7nn5fly3uvq2e67w2apn560s4smmrt9e3x52nt2svmmu3", "thorpub1addwnpepqtspqyy6gk22u37ztra4hq3hdakc0w0k60sfy849mlml2vrpfr0wvm6uz09", "thorpub1addwnpepq2ryyje5zr09lq7gqptjwnxqsy2vcdngvwd6z7yt5yjcnyj8c8cn559xe69", "thorpub1addwnpepqfjcw5l4ay5t00c32mmlky7qrppepxzdlkcwfs2fd5u73qrwna0vzag3y4j"}
+	testPubKeys = [...]string{
+		"8v5YUvEtN8vpNKejH1dmVi4BoEZX+c5EHoqQCXQM/WE=", // 3
+		"D2Ou8kohzWyVESbCOE/yXHmCAaCbB2R1jDWRpECf1JY=", // 12D3KooWArSSkT7VYQPrbp6cLqWUTqQYb1rX77GhTJaUWMYjeVFs
+		"Zlgbrnmk6xDkamTs004bZgUYbpiE5dV4rSg+MfSk4gU=", // 2
+		"jzTMn5m27Cmt6EuCAuKnIzxNbVYY4EIywP0a9grmSok=", // 1
+	}
 
 	testPeers = []string{
-		"16Uiu2HAm4TmEzUqy3q3Dv7HvdoSboHk5sFj2FH3npiN5vDbJC6gh",
-		"16Uiu2HAm2FzqoUdS6Y9Esg2EaGcAG5rVe1r6BFNnmmQr2H3bqafa",
-		"16Uiu2HAmACG5DtqmQsHtXg4G2sLS65ttv84e7MrL4kapkjfmhxAp",
-		"16Uiu2HAmAWKWf5vnpiAhfdSQebTbbB3Bg35qtyG7Hr4ce23VFA8V",
+		"12D3KooWGhsgEZA8Nc6xnYRLJxZns8KWtF6ztF73cDhAKXGiHjAc",
+		"12D3KooWArSSkT7VYQPrbp6cLqWUTqQYb1rX77GhTJaUWMYjeVFs",
+		"12D3KooWSAumwg2rxzjsgv7LuWM4u3HqfLcnekg2NHc5TsNj5hgC",
+		"12D3KooWKTPAZDwc9VuBs7NrVsR9MrUo3L6HzrqP9grtiAFBTbCL",
 	}
 )
 
@@ -35,7 +40,6 @@ var _ = Suite(&policyTestSuite{})
 
 func (p *policyTestSuite) SetUpTest(c *C) {
 	p.blameMgr = NewBlameManager()
-	conversion.SetupBech32Prefix()
 	p1, err := peer.Decode(testPeers[0])
 	c.Assert(err, IsNil)
 	p2, err := peer.Decode(testPeers[1])
@@ -47,7 +51,7 @@ func (p *policyTestSuite) SetUpTest(c *C) {
 	p.blameMgr.SetLastUnicastPeer(p3, "testType")
 	localTestPubKeys := testPubKeys[:]
 	sort.Strings(localTestPubKeys)
-	partiesID, localPartyID, err := conversion.GetParties(localTestPubKeys, testPubKeys[0])
+	partiesID, localPartyID, err := conversion.GetParties(localTestPubKeys, testPubKeys[0], false, "")
 	c.Assert(err, IsNil)
 	partyIDMap := conversion.SetupPartyIDMap(partiesID)
 	err = conversion.SetupIDMaps(partyIDMap, p.blameMgr.PartyIDtoP2PID)
@@ -55,7 +59,7 @@ func (p *policyTestSuite) SetUpTest(c *C) {
 	outCh := make(chan btss.Message, len(partiesID))
 	endCh := make(chan bkg.LocalPartySaveData, len(partiesID))
 	ctx := btss.NewPeerContext(partiesID)
-	params := btss.NewParameters(ctx, localPartyID, len(partiesID), 3)
+	params := btss.NewParameters(btss.Edwards(), ctx, localPartyID, len(partiesID), 3)
 	keyGenParty := bkg.NewLocalParty(params, outCh, endCh)
 
 	testPartyMap := new(sync.Map)
@@ -74,7 +78,7 @@ func (p *policyTestSuite) TestGetBroadcastBlame(c *C) {
 	pi := p.blameMgr.partyInfo
 
 	r1 := btss.MessageRouting{
-		From:                    pi.PartyIDMap["1"],
+		From:                    pi.PartyIDMap["D2Ou8kohzWyVESbCOE/yXHmCAaCbB2R1jDWRpECf1JY="],
 		To:                      nil,
 		IsBroadcast:             false,
 		IsToOldCommittee:        false,
@@ -103,7 +107,7 @@ func (p *policyTestSuite) TestTssWrongShareBlame(c *C) {
 	pi := p.blameMgr.partyInfo
 
 	r1 := btss.MessageRouting{
-		From:                    pi.PartyIDMap["1"],
+		From:                    pi.PartyIDMap["D2Ou8kohzWyVESbCOE/yXHmCAaCbB2R1jDWRpECf1JY="],
 		To:                      nil,
 		IsBroadcast:             false,
 		IsToOldCommittee:        false,
@@ -116,7 +120,7 @@ func (p *policyTestSuite) TestTssWrongShareBlame(c *C) {
 	}
 	target, err := p.blameMgr.TssWrongShareBlame(&msg)
 	c.Assert(err, IsNil)
-	c.Assert(target, Equals, "thorpub1addwnpepqfjcw5l4ay5t00c32mmlky7qrppepxzdlkcwfs2fd5u73qrwna0vzag3y4j")
+	c.Assert(target, Equals, "D2Ou8kohzWyVESbCOE/yXHmCAaCbB2R1jDWRpECf1JY=")
 }
 
 func (p *policyTestSuite) TestTssMissingShareBlame(c *C) {
@@ -129,16 +133,22 @@ func (p *policyTestSuite) TestTssMissingShareBlame(c *C) {
 	acceptedShares[RoundInfo{0, "testRound", "123:0"}] = []string{"1", "2"}
 	acceptedShares[RoundInfo{1, "testRound", "123:0"}] = []string{"1"}
 	blameMgr.acceptShareLocker.Unlock()
-	nodes, _, err := blameMgr.TssMissingShareBlame(2)
+	nodes, _, err := blameMgr.TssMissingShareBlame(2, messages.ECDSAKEYGEN)
+	sort.Slice(nodes, func(i int, j int) bool {
+		return nodes[i].Pubkey < nodes[j].Pubkey
+	})
 	c.Assert(err, IsNil)
-	c.Assert(nodes[0].Pubkey, Equals, localTestPubKeys[3])
+	c.Assert(nodes[1].Pubkey, Equals, localTestPubKeys[2])
 	// we test if the missing share happens in round2
 	blameMgr.acceptShareLocker.Lock()
 	acceptedShares[RoundInfo{0, "testRound", "123:0"}] = []string{"1", "2", "3"}
 	blameMgr.acceptShareLocker.Unlock()
-	nodes, _, err = blameMgr.TssMissingShareBlame(2)
+	nodes, _, err = blameMgr.TssMissingShareBlame(2, messages.ECDSAKEYGEN)
+	sort.Slice(nodes, func(i int, j int) bool {
+		return nodes[i].Pubkey < nodes[j].Pubkey
+	})
 	c.Assert(err, IsNil)
 	results := []string{nodes[0].Pubkey, nodes[1].Pubkey}
 	sort.Strings(results)
-	c.Assert(results, DeepEquals, localTestPubKeys[2:])
+	c.Assert(results, DeepEquals, localTestPubKeys[1:3])
 }

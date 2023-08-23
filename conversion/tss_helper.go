@@ -1,29 +1,27 @@
 package conversion
 
 import (
+	"encoding/base64"
 	"errors"
 	"math/rand"
 
 	"github.com/blang/semver"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	atypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 // GetRandomPubKey for test
 func GetRandomPubKey() string {
-	_, pubKey, _ := atypes.KeyTestPubAddr()
-	bech32PubKey, _ := sdk.Bech32ifyPubKey(sdk.Bech32PubKeyTypeAccPub, pubKey)
-	return bech32PubKey
+	publicKey := ed25519.GenPrivKey().PubKey()
+	return base64.StdEncoding.EncodeToString(publicKey.Bytes())
 }
 
 // GetRandomPeerID for test
 func GetRandomPeerID() peer.ID {
-	_, pubKey, _ := atypes.KeyTestPubAddr()
-	var pk secp256k1.PubKey
-	copy(pk[:], pubKey.Bytes())
-	peerID, _ := GetPeerIDFromSecp256PubKey(pk)
+	publicKey := ed25519.GenPrivKey().PubKey()
+	var pk ed25519.PubKey
+	copy(pk[:], publicKey.Bytes())
+	peerID, _ := GetPeerIDFromEDDSAPubKey(pk)
 	return peerID
 }
 

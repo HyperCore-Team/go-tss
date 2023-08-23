@@ -5,24 +5,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/libp2p/go-libp2p/p2p/discovery/routing"
+	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
+	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
+	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/protocol"
-	discovery "github.com/libp2p/go-libp2p-discovery"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	maddr "github.com/multiformats/go-multiaddr"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/messages"
 )
 
 var (
@@ -59,10 +63,11 @@ type Communication struct {
 	BroadcastMsgChan chan *messages.BroadcastMsgChan
 	externalAddr     maddr.Multiaddr
 	streamMgr        *StreamMgr
+	whitelist        map[string]bool
 }
 
 // NewCommunication create a new instance of Communication
-func NewCommunication(rendezvous string, bootstrapPeers []maddr.Multiaddr, port int, externalIP string) (*Communication, error) {
+func NewCommunication(rendezvous, baseDir string, bootstrapPeers []maddr.Multiaddr, port int, externalIP string, pubKeyWhitelist map[string]bool) (*Communication, error) {
 	addr, err := maddr.NewMultiaddr(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", port))
 	if err != nil {
 		return nil, fmt.Errorf("fail to create listen addr: %w", err)
@@ -74,10 +79,15 @@ func NewCommunication(rendezvous string, bootstrapPeers []maddr.Multiaddr, port 
 			return nil, fmt.Errorf("fail to create listen with given external IP: %w", err)
 		}
 	}
+	outputFile, err := os.Create(filepath.Join(baseDir, "tss.communication.log"))
+	if err != nil {
+		return nil, err
+	}
+
 	return &Communication{
 		rendezvous:       rendezvous,
 		bootstrapPeers:   bootstrapPeers,
-		logger:           log.With().Str("module", "communication").Logger(),
+		logger:           log.With().Str("module", "communication").Logger().Output(outputFile),
 		listenAddr:       addr,
 		wg:               &sync.WaitGroup{},
 		stopChan:         make(chan struct{}),
@@ -87,6 +97,7 @@ func NewCommunication(rendezvous string, bootstrapPeers []maddr.Multiaddr, port 
 		BroadcastMsgChan: make(chan *messages.BroadcastMsgChan, 1024),
 		externalAddr:     externalAddr,
 		streamMgr:        NewStreamMgr(),
+		whitelist:        pubKeyWhitelist,
 	}, nil
 }
 
@@ -98,6 +109,15 @@ func (c *Communication) GetHost() host.Host {
 // GetLocalPeerID from p2p host
 func (c *Communication) GetLocalPeerID() string {
 	return c.host.ID().String()
+}
+
+func (c *Communication) GetWhitelist() map[string]bool {
+	return c.whitelist
+}
+
+// DeleteWhitelistEntry RemoveWhitelistEntry delete an entry in the whitelist map
+func (c *Communication) DeleteWhitelistEntry(pubKey string) {
+	delete(c.whitelist, pubKey)
 }
 
 // Broadcast message to Peers
@@ -188,6 +208,22 @@ func (c *Communication) readFromStream(stream network.Stream) {
 func (c *Communication) handleStream(stream network.Stream) {
 	peerID := stream.Conn().RemotePeer().String()
 	c.logger.Debug().Msgf("handle stream from peer: %s", peerID)
+
+	if len(c.whitelist) > 0 {
+		_, ok := c.whitelist[peerID]
+		if !ok {
+			c.logger.Debug().Msgf("Peer %s is not in our whitelist, will close connection!", peerID)
+			if err := stream.Close(); err != nil {
+				// todo, add mechanism to check that it is actually closed
+				c.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err.Error(), peerID)
+			} else {
+				c.logger.Debug().Msgf("Closed stream with peer %s ", peerID)
+			}
+
+			return
+		}
+	}
+
 	// we will read from that stream
 	c.readFromStream(stream)
 }
@@ -238,7 +274,7 @@ func (c *Communication) bootStrapConnectivityCheck() error {
 
 func (c *Communication) startChannel(privKeyBytes []byte) error {
 	ctx := context.Background()
-	p2pPriKey, err := crypto.UnmarshalSecp256k1PrivateKey(privKeyBytes)
+	p2pPriKey, err := crypto.UnmarshalEd25519PrivateKey(privKeyBytes)
 	if err != nil {
 		c.logger.Error().Msgf("error is %f", err)
 		return err
@@ -251,10 +287,42 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 		return addrs
 	}
 
-	h, err := libp2p.New(ctx,
+	scalingLimits := rcmgr.DefaultLimits
+	protocolPeerBaseLimit := rcmgr.BaseLimit{
+		Streams:         512,
+		StreamsInbound:  256,
+		StreamsOutbound: 256,
+		Memory:          64 << 20,
+	}
+	protocolPeerLimitIncrease := rcmgr.BaseLimitIncrease{
+		Streams:         64,
+		StreamsInbound:  64,
+		StreamsOutbound: 64,
+		Memory:          16 << 20,
+	}
+
+	scalingLimits.ProtocolBaseLimit = protocolPeerBaseLimit
+	scalingLimits.ProtocolLimitIncrease = protocolPeerLimitIncrease
+	scalingLimits.ProtocolPeerBaseLimit = protocolPeerBaseLimit
+	scalingLimits.ProtocolPeerLimitIncrease = protocolPeerLimitIncrease
+	for _, item := range []protocol.ID{joinPartyProtocol, joinPartyProtocolWithLeader, TSSProtocolID} {
+		scalingLimits.AddProtocolLimit(item, protocolPeerBaseLimit, protocolPeerLimitIncrease)
+		scalingLimits.AddProtocolPeerLimit(item, protocolPeerBaseLimit, protocolPeerLimitIncrease)
+	}
+
+	// Add limits around included libp2p protocols
+	libp2p.SetDefaultServiceLimits(&scalingLimits)
+
+	cmgr, err := connmgr.NewConnManager(1024, 1500)
+	if err != nil {
+		return err
+	}
+
+	h, err := libp2p.New(
 		libp2p.ListenAddrs([]maddr.Multiaddr{c.listenAddr}...),
 		libp2p.Identity(p2pPriKey),
 		libp2p.AddrsFactory(addressFactory),
+		libp2p.ConnectionManager(cmgr),
 	)
 	if err != nil {
 		return fmt.Errorf("fail to create p2p host: %w", err)
@@ -276,13 +344,13 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 	}
 
 	var connectionErr error
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		connectionErr = c.connectToBootstrapPeers()
 		if connectionErr == nil {
 			break
 		}
-		c.logger.Error().Msg("cannot connect to any bootstrap node, retry in 5 seconds")
-		time.Sleep(time.Second * 5)
+		c.logger.Error().Msg("cannot connect to any bootstrap node, retry in 10 seconds")
+		time.Sleep(time.Second * 10)
 	}
 	if connectionErr != nil {
 		return fmt.Errorf("fail to connect to bootstrap peer: %w", connectionErr)
@@ -290,8 +358,9 @@ func (c *Communication) startChannel(privKeyBytes []byte) error {
 
 	// We use a rendezvous point "meet me here" to announce our location.
 	// This is like telling your friends to meet you at the Eiffel Tower.
-	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
-	discovery.Advertise(ctx, routingDiscovery, c.rendezvous)
+	routingDiscovery := routing.NewRoutingDiscovery(kademliaDHT)
+	// todo handle ttl?
+	routingDiscovery.Advertise(ctx, c.rendezvous)
 	err = c.bootStrapConnectivityCheck()
 	if err != nil {
 		return err

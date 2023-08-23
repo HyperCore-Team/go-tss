@@ -3,8 +3,8 @@ package messages
 import (
 	"fmt"
 
-	btss "github.com/binance-chain/tss-lib/tss"
-	"github.com/libp2p/go-libp2p-core/peer"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 // THORChainTSSMessageType  represent the messgae type used in THORChain TSS
@@ -19,6 +19,10 @@ const (
 	TSSKeyGenVerMsg
 	// TSSKeySignVerMsg is the message we create to make sure every party receive the same broadcast message
 	TSSKeySignVerMsg
+	// TSSPartyReGroupMsg is the message of regroup the tss parties
+	TSSPartyReGroupMsg
+	// TSSPartReGroupVerMSg is the message we create to make sure every party receive the same broadcast message
+	TSSPartReGroupVerMSg
 	// TSSControlMsg is the message we create to exchange Tss share
 	TSSControlMsg
 	// TSSTaskDone is the message of Tss process notification
@@ -38,6 +42,10 @@ func (msgType THORChainTSSMessageType) String() string {
 		return "TSSKeyGenVerMsg"
 	case TSSKeySignVerMsg:
 		return "TSSKeySignVerMsg"
+	case TSSPartyReGroupMsg:
+		return "TSSPartyReGroupMsg"
+	case TSSPartReGroupVerMSg:
+		return "TSSPartReGroupVerMSg"
 	default:
 		return "Unknown"
 	}
@@ -73,7 +81,20 @@ type WireMessage struct {
 
 // GetCacheKey return the key we used to cache it locally
 func (m *WireMessage) GetCacheKey() string {
-	return fmt.Sprintf("%s-%s", m.Routing.From.Id, m.RoundInfo)
+	switch m.Routing.From.Moniker {
+	case "new_party", "old_party":
+		tag := ""
+		for _, el := range m.Routing.To {
+			if el.Moniker != "" {
+				tag = el.Moniker
+				break
+			}
+		}
+		return fmt.Sprintf("%s-%s-%s", m.Routing.From.Id, m.RoundInfo, tag)
+	default:
+		return fmt.Sprintf("%s-%s", m.Routing.From.Id, m.RoundInfo)
+
+	}
 }
 
 type TssControl struct {

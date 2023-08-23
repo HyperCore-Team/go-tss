@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/host"
 	tnet "github.com/libp2p/go-libp2p-testing/net"
+	"github.com/libp2p/go-libp2p/core/host"
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.com/thorchain/tss/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/conversion"
 )
 
 func init() {
@@ -107,8 +107,12 @@ func TestNewPartyCoordinator(t *testing.T) {
 	var peers []string
 
 	timeout := time.Second * 4
+	whitelist := map[string]bool{}
+	whitelist["12D3KooWE4qDcRrueTuRYWUdQZgcy7APZqBngVeXRt4Y6ytHizKV"] = true
+	whitelist["12D3KooWHHzSeKaY8xuZVzkLbKFfvNgPPeKhFBGrMbNzbm5akpqu"] = true
+	whitelist["12D3KooWKRyzVWW6ChFjQjK4miCty85Niy49tpPV95XdKu1BcvMA"] = true
 	for _, el := range hosts {
-		pcs = append(pcs, NewPartyCoordinator(el, timeout))
+		pcs = append(pcs, NewPartyCoordinator(el, timeout, whitelist))
 		peers = append(peers, el.ID().String())
 	}
 
@@ -145,8 +149,12 @@ func TestNewPartyCoordinatorTimeOut(t *testing.T) {
 	hosts := setupHosts(t, 4)
 	var pcs []*PartyCoordinator
 	var peers []string
+	whitelist := map[string]bool{}
+	whitelist["12D3KooWE4qDcRrueTuRYWUdQZgcy7APZqBngVeXRt4Y6ytHizKV"] = true
+	whitelist["12D3KooWHHzSeKaY8xuZVzkLbKFfvNgPPeKhFBGrMbNzbm5akpqu"] = true
+	whitelist["12D3KooWKRyzVWW6ChFjQjK4miCty85Niy49tpPV95XdKu1BcvMA"] = true
 	for _, el := range hosts {
-		pcs = append(pcs, NewPartyCoordinator(el, timeout))
+		pcs = append(pcs, NewPartyCoordinator(el, timeout, whitelist))
 	}
 	sort.Slice(pcs, func(i, j int) bool {
 		return pcs[i].host.ID().String() > pcs[j].host.ID().String()
@@ -227,7 +235,11 @@ func TestGetPeerIDs(t *testing.T) {
 	}
 	p1 := h1.ID()
 	timeout := time.Second * 2
-	pc := NewPartyCoordinator(h1, timeout)
+	whitelist := map[string]bool{}
+	whitelist["12D3KooWE4qDcRrueTuRYWUdQZgcy7APZqBngVeXRt4Y6ytHizKV"] = true
+	whitelist["12D3KooWHHzSeKaY8xuZVzkLbKFfvNgPPeKhFBGrMbNzbm5akpqu"] = true
+	whitelist["12D3KooWKRyzVWW6ChFjQjK4miCty85Niy49tpPV95XdKu1BcvMA"] = true
+	pc := NewPartyCoordinator(h1, timeout, whitelist)
 	r, err := pc.getPeerIDs([]string{})
 	assert.Nil(t, err)
 	assert.Len(t, r, 0)

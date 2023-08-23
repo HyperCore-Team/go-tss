@@ -11,8 +11,15 @@ type TssConfig struct {
 	KeyGenTimeout time.Duration
 	// KeySignTimeoutSeconds defines how long do we wait keysign
 	KeySignTimeout time.Duration
+	// KeyRegroupTimeoutSeconds defines how long do we wait for keyregroup
+	KeyRegroupTimeout time.Duration
 	// Pre-parameter define the pre-parameter generations timeout
 	PreParamTimeout time.Duration
 	// enable the tss monitor
 	EnableMonitor bool
 }
+
+const (
+	NewParty = "new_party"
+	OldParty = "old_party"
+)

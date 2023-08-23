@@ -1,8 +1,7 @@
 package main
 
 import (
-	"crypto/ecdsa"
-	"encoding/hex"
+	//"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,10 +11,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"github.com/binance-chain/tss-lib/test"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/HyperCore-Team/tss-lib/common"
+	"github.com/HyperCore-Team/tss-lib/eddsa/keygen"
+	"github.com/HyperCore-Team/tss-lib/test"
+	"github.com/HyperCore-Team/tss-lib/tss"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/ipfs/go-log"
 	"github.com/pkg/errors"
 	"golang.org/x/text/language"
@@ -28,15 +28,8 @@ var (
 	expectedIncomingMsgs,
 	receivedIncomingMsgs,
 	nMinus1 float64
-	preParamTestData keygen.LocalPreParams
+	//preParamTestData keygen.LocalPreParams
 )
-
-func init() {
-	preDataJSON, _ := hex.DecodeString(preParamDataHex)
-	if err := json.Unmarshal(preDataJSON, &preParamTestData); err != nil {
-		panic(err)
-	}
-}
 
 func usage() {
 	if _, err := fmt.Fprintf(os.Stderr, "usage: tss-benchgen [-flag=value, ...] datadir\n"); err != nil {
@@ -134,9 +127,9 @@ func runKeyGen(dir string, t, n int) {
 
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
-		params := tss.NewParameters(p2pCtx, pIDs[i], len(pIDs), t)
-		params.UNSAFE_setKGIgnoreH1H2Dupes(true)
-		P := keygen.NewLocalParty(params, outCh, endCh, preParamTestData).(*keygen.LocalParty)
+		params := tss.NewParameters(btss.Edwards(), p2pCtx, pIDs[i], len(pIDs), t)
+		//params.UNSAFE_setKGIgnoreH1H2Dupes(true)
+		P := keygen.NewLocalParty(params, outCh, endCh).(*keygen.LocalParty)
 		parties = append(parties, P)
 		go func(P *keygen.LocalParty) {
 			if err := P.Start(); err != nil {
@@ -183,17 +176,10 @@ outer:
 			atomic.AddInt32(&ended, 1)
 			if atomic.LoadInt32(&ended) == int32(len(pIDs)) {
 				// build ecdsa key pair
-				pkX, pkY := save.ECDSAPub.X(), save.ECDSAPub.Y()
-				pk := ecdsa.PublicKey{
-					Curve: tss.EC(),
-					X:     pkX,
-					Y:     pkY,
-				}
-				sk := ecdsa.PrivateKey{
-					PublicKey: pk,
-				}
+				pkX, pkY := save.EDDSAPub.X(), save.EDDSAPub.Y()
+				curve := btss.Edwards()
 				// test pub key, should be on curve and match pkX, pkY
-				if !sk.IsOnCurve(pkX, pkY) {
+				if !curve.IsOnCurve(pkX, pkY) {
 					panic("public key must be on curve, but it was not")
 				}
 				break outer

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/ecdsa"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,12 +11,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"github.com/binance-chain/tss-lib/ecdsa/signing"
-	"github.com/binance-chain/tss-lib/test"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/HyperCore-Team/tss-lib/common"
+	"github.com/HyperCore-Team/tss-lib/eddsa/keygen"
+	"github.com/HyperCore-Team/tss-lib/eddsa/signing"
+	"github.com/HyperCore-Team/tss-lib/test"
+	"github.com/HyperCore-Team/tss-lib/tss"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/ipfs/go-log"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
@@ -125,14 +126,14 @@ func runSign(dir string, t int) {
 
 	errCh := make(chan *tss.Error, len(signPIDs))
 	outCh := make(chan tss.Message, len(signPIDs))
-	endCh := make(chan *signing.SignatureData, len(signPIDs))
+	endCh := make(chan common.SignatureData, len(signPIDs))
 
 	updater := test.SharedPartyUpdater
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(p2pCtx, signPIDs[i], len(signPIDs), t)
-		P := signing.NewLocalParty(msg, params, keys[i], outCh, endCh).(*signing.LocalParty)
+		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), t)
+		P := signing.NewLocalParty(big.NewInt(0).Set(msg), params, keys[i], outCh, endCh).(*signing.LocalParty)
 		parties = append(parties, P)
 		go func(P *signing.LocalParty) {
 			if err := P.Start(); err != nil {
@@ -169,16 +170,16 @@ outer:
 			atomic.AddInt32(&ended, 1)
 			if atomic.LoadInt32(&ended) == int32(len(signPIDs)) {
 				// BEGIN ECDSA verify
-				pkX, pkY := keys[0].ECDSAPub.X(), keys[0].ECDSAPub.Y()
-				pk := ecdsa.PublicKey{
-					Curve: tss.EC(),
+				pkX, pkY := keys[0].EDDSAPub.X(), keys[0].EDDSAPub.Y()
+				pk := edwards.PublicKey{
+					Curve: btss.Edwards(),
 					X:     pkX,
 					Y:     pkY,
 				}
-				r := new(big.Int).SetBytes(data.Signature.GetR())
-				s := new(big.Int).SetBytes(data.Signature.GetS())
+				r := new(big.Int).SetBytes(data.R)
+				s := new(big.Int).SetBytes(data.S)
 				var ok bool
-				if ok = ecdsa.Verify(
+				if ok = edwards.Verify(
 					&pk,
 					msg.Bytes(),
 					r, s,

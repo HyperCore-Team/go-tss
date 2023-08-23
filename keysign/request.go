@@ -7,14 +7,16 @@ type Request struct {
 	SignerPubKeys []string `json:"signer_pub_keys"`
 	BlockHeight   int64    `json:"block_height"`
 	Version       string   `json:"tss_version"`
+	Algo          string   `json:"algo"`
 }
 
-func NewRequest(pk string, msgs []string, blockHeight int64, signers []string, version string) Request {
+func NewRequest(pk string, msgs []string, blockHeight int64, signers []string, version string, algo string) Request {
 	return Request{
 		PoolPubKey:    pk,
 		Messages:      msgs,
 		SignerPubKeys: signers,
 		BlockHeight:   blockHeight,
 		Version:       version,
+		Algo:          algo,
 	}
 }

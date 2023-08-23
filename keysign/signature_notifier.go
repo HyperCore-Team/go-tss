@@ -6,18 +6,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/binance-chain/tss-lib/common"
-	tsslibcommon "github.com/binance-chain/tss-lib/common"
-	"github.com/golang/protobuf/proto"
-	"github.com/libp2p/go-libp2p-core/host"
-	"github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/protocol"
+	"github.com/HyperCore-Team/tss-lib/common"
+	tsslibcommon "github.com/HyperCore-Team/tss-lib/common"
+	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/protobuf/proto"
 
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/p2p"
 )
 
 var signatureNotifierProtocol protocol.ID = "/p2p/signatureNotifier"
@@ -25,7 +25,7 @@ var signatureNotifierProtocol protocol.ID = "/p2p/signatureNotifier"
 type signatureItem struct {
 	messageID     string
 	peerID        peer.ID
-	signatureData []*common.ECSignature
+	signatureData []*common.SignatureData
 }
 
 // SignatureNotifier is design to notify the
@@ -35,11 +35,14 @@ type SignatureNotifier struct {
 	notifierLock *sync.Mutex
 	notifiers    map[string]*Notifier
 	messages     chan *signatureItem
+	Signatures   []*common.SignatureData
 	streamMgr    *p2p.StreamMgr
+	whitelist    map[string]bool
+	algo         messages.Algo
 }
 
 // NewSignatureNotifier create a new instance of SignatureNotifier
-func NewSignatureNotifier(host host.Host) *SignatureNotifier {
+func NewSignatureNotifier(host host.Host, whitelist map[string]bool, algo messages.Algo) *SignatureNotifier {
 	s := &SignatureNotifier{
 		logger:       log.With().Str("module", "signature_notifier").Logger(),
 		host:         host,
@@ -47,6 +50,8 @@ func NewSignatureNotifier(host host.Host) *SignatureNotifier {
 		notifiers:    make(map[string]*Notifier),
 		messages:     make(chan *signatureItem),
 		streamMgr:    p2p.NewStreamMgr(),
+		whitelist:    whitelist,
+		algo:         algo,
 	}
 	host.SetStreamHandler(signatureNotifierProtocol, s.handleStream)
 	return s
@@ -55,6 +60,21 @@ func NewSignatureNotifier(host host.Host) *SignatureNotifier {
 // HandleStream handle signature notify stream
 func (s *SignatureNotifier) handleStream(stream network.Stream) {
 	remotePeer := stream.Conn().RemotePeer()
+	peerID := remotePeer.String()
+
+	_, ok := s.whitelist[peerID]
+	if !ok {
+		s.logger.Debug().Msgf("Peer %s is not in our whitelist, will close connection!", peerID)
+		if err := stream.Close(); err != nil {
+			// todo, add mechanism to check that it is actually closed
+			s.logger.Debug().Msgf("Got %s when trying to close stream with peer %s ", err.Error(), peerID)
+		} else {
+			s.logger.Debug().Msgf("Closed stream with peer %s ", peerID)
+
+		}
+		return
+	}
+
 	logger := s.logger.With().Str("remote peer", remotePeer.String()).Logger()
 	logger.Debug().Msg("reading signature notifier message")
 	payload, err := p2p.ReadStreamWithBuffer(stream)
@@ -75,10 +95,10 @@ func (s *SignatureNotifier) handleStream(stream network.Stream) {
 		return
 	}
 	s.streamMgr.AddStream(msg.ID, stream)
-	var signatures []*common.ECSignature
+	var signatures []*common.SignatureData
 	if len(msg.Signatures) > 0 && msg.KeysignStatus == messages.KeysignSignature_Success {
 		for _, el := range msg.Signatures {
-			var signature common.ECSignature
+			var signature common.SignatureData
 			if err := proto.Unmarshal(el, &signature); err != nil {
 				logger.Error().Err(err).Msg("fail to unmarshal signature data")
 				return
@@ -87,13 +107,14 @@ func (s *SignatureNotifier) handleStream(stream network.Stream) {
 		}
 	}
 	s.notifierLock.Lock()
+	s.Signatures = signatures
 	defer s.notifierLock.Unlock()
 	n, ok := s.notifiers[msg.ID]
 	if !ok {
 		logger.Debug().Msgf("notifier for message id(%s) not exist", msg.ID)
 		return
 	}
-	finished, err := n.ProcessSignature(signatures)
+	finished, err := n.ProcessSignature(signatures, s.algo)
 	if err != nil {
 		logger.Error().Err(err).Msg("fail to verify local signature data")
 		return
@@ -104,7 +125,7 @@ func (s *SignatureNotifier) handleStream(stream network.Stream) {
 }
 
 func (s *SignatureNotifier) sendOneMsgToPeer(m *signatureItem) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
 	defer cancel()
 	stream, err := s.host.NewStream(ctx, m.peerID, signatureNotifierProtocol)
 	if err != nil {
@@ -140,7 +161,7 @@ func (s *SignatureNotifier) sendOneMsgToPeer(m *signatureItem) error {
 		return fmt.Errorf("fail to write message to stream:%w", err)
 	}
 	// we wait for 1 second to allow the receive notify us
-	if err := stream.SetReadDeadline(time.Now().Add(time.Second * 1)); nil != err {
+	if err := stream.SetReadDeadline(time.Now().Add(time.Second * 2)); nil != err {
 		return err
 	}
 	ret := make([]byte, 8)
@@ -149,11 +170,11 @@ func (s *SignatureNotifier) sendOneMsgToPeer(m *signatureItem) error {
 }
 
 // BroadcastSignature sending the keysign signature to all other peers
-func (s *SignatureNotifier) BroadcastSignature(messageID string, sig []*tsslibcommon.ECSignature, peers []peer.ID) error {
+func (s *SignatureNotifier) BroadcastSignature(messageID string, sig []*tsslibcommon.SignatureData, peers []peer.ID) error {
 	return s.broadcastCommon(messageID, sig, peers)
 }
 
-func (s *SignatureNotifier) broadcastCommon(messageID string, sig []*tsslibcommon.ECSignature, peers []peer.ID) error {
+func (s *SignatureNotifier) broadcastCommon(messageID string, sig []*tsslibcommon.SignatureData, peers []peer.ID) error {
 	wg := sync.WaitGroup{}
 	for _, p := range peers {
 		if p == s.host.ID() {
@@ -170,6 +191,7 @@ func (s *SignatureNotifier) broadcastCommon(messageID string, sig []*tsslibcommo
 			defer wg.Done()
 			err := s.sendOneMsgToPeer(signature)
 			if err != nil {
+				fmt.Println("Error: ", err)
 				s.logger.Error().Err(err).Msgf("fail to send signature to peer %s", signature.peerID.String())
 			}
 		}()
@@ -196,8 +218,8 @@ func (s *SignatureNotifier) removeNotifier(n *Notifier) {
 }
 
 // WaitForSignature wait until keysign finished and signature is available
-func (s *SignatureNotifier) WaitForSignature(messageID string, message [][]byte, poolPubKey string, timeout time.Duration, sigChan chan string) ([]*common.ECSignature, error) {
-	n, err := NewNotifier(messageID, message, poolPubKey)
+func (s *SignatureNotifier) WaitForSignature(messageID string, message [][]byte, poolPubKey string, timeout time.Duration, sigChan chan string, algo messages.Algo) ([]*common.SignatureData, error) {
+	n, err := NewNotifier(messageID, message, poolPubKey, algo)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create notifier")
 	}
@@ -216,4 +238,8 @@ func (s *SignatureNotifier) WaitForSignature(messageID string, message [][]byte,
 
 func (s *SignatureNotifier) ReleaseStream(msgID string) {
 	s.streamMgr.ReleaseStream(msgID)
+}
+
+func (s *SignatureNotifier) GetWhitelist() map[string]bool {
+	return s.whitelist
 }

@@ -2,20 +2,20 @@ package common
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"math/big"
 	"path"
 
-	btss "github.com/binance-chain/tss-lib/tss"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	. "gopkg.in/check.v1"
 
-	"gitlab.com/thorchain/tss/go-tss/blame"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/blame"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/messages"
 )
 
 type tssHelpSuite struct{}
@@ -45,7 +45,7 @@ func (t *tssHelpSuite) TestGetHashToBroadcast(c *C) {
 func (t *tssHelpSuite) TestMsgSignAndVerification(c *C) {
 	msg := []byte("hello")
 	msgID := "123"
-	sk := secp256k1.GenPrivKey()
+	sk := ed25519.GenPrivKey()
 	sig, err := generateSignature(msg, msgID, sk)
 	c.Assert(err, IsNil)
 	ret := verifySignature(sk.PubKey(), msg, sig, msgID)
@@ -61,23 +61,22 @@ func (t *tssHelpSuite) TestMsgToHashString(c *C) {
 }
 
 func (t *tssHelpSuite) TestTssCommon_NotifyTaskDone(c *C) {
-	conversion.SetupBech32Prefix()
-	pk, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeAccPub, "thorpub1addwnpepqtdklw8tf3anjz7nn5fly3uvq2e67w2apn560s4smmrt9e3x52nt2svmmu3")
+	pk, err := base64.StdEncoding.DecodeString("8v5YUvEtN8vpNKejH1dmVi4BoEZX+c5EHoqQCXQM/WE=")
 	c.Assert(err, IsNil)
-	peerID, err := conversion.GetPeerIDFromSecp256PubKey(pk.Bytes())
+	peerID, err := conversion.GetPeerIDFromEDDSAPubKey(pk)
 	c.Assert(err, IsNil)
-	sk := secp256k1.GenPrivKey()
+	sk := ed25519.GenPrivKey()
 	tssCommon := NewTssCommon(peerID.String(), nil, TssConfig{}, "message-id", sk, 1)
 	err = tssCommon.NotifyTaskDone()
 	c.Assert(err, IsNil)
 }
 
 func (t *tssHelpSuite) TestTssCommon_processRequestMsgFromPeer(c *C) {
-	pk, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeAccPub, "thorpub1addwnpepqtdklw8tf3anjz7nn5fly3uvq2e67w2apn560s4smmrt9e3x52nt2svmmu3")
+	pk, err := base64.StdEncoding.DecodeString("8v5YUvEtN8vpNKejH1dmVi4BoEZX+c5EHoqQCXQM/WE=")
 	c.Assert(err, IsNil)
-	peerID, err := conversion.GetPeerIDFromSecp256PubKey(pk.Bytes())
+	peerID, err := conversion.GetPeerIDFromEDDSAPubKey(pk)
 	c.Assert(err, IsNil)
-	sk := secp256k1.GenPrivKey()
+	sk := ed25519.GenPrivKey()
 	testPeer, err := peer.Decode("16Uiu2HAm2FzqoUdS6Y9Esg2EaGcAG5rVe1r6BFNnmmQr2H3bqafa")
 	c.Assert(err, IsNil)
 	tssCommon := NewTssCommon(peerID.String(), nil, TssConfig{}, "message-id", sk, 1)
@@ -121,21 +120,15 @@ func (t *tssHelpSuite) TestGetMsgRound(c *C) {
 		sharesKeySign = append(sharesKeySign, &msg)
 	}
 	messagesKeygen := []string{
-		messages.KEYGEN1,
-		messages.KEYGEN2aUnicast,
-		messages.KEYGEN2b,
-		messages.KEYGEN3,
+		messages.EDDSAKEYGEN1,
+		messages.EDDSAKEYGEN2a,
+		messages.EDDSAKEYGEN2b,
 	}
 	//
 	messagesKeysign := []string{
-		messages.KEYSIGN1aUnicast,
-		messages.KEYSIGN1b,
-		messages.KEYSIGN2Unicast,
-		messages.KEYSIGN3,
-		messages.KEYSIGN4,
-		messages.KEYSIGN5,
-		messages.KEYSIGN6,
-		messages.KEYSIGN7,
+		messages.EDDSAKEYSIGN1,
+		messages.EDDSAKEYSIGN2,
+		messages.EDDSAKEYSIGN3,
 	}
 	mockParty := btss.NewPartyID("12", "22", big.NewInt(2))
 	j := 0
@@ -172,6 +165,6 @@ func (t *tssHelpSuite) TestGetMsgRound(c *C) {
 	}
 
 	ret, err := GetMsgRound(sharesKeyGen[1].Message, mockParty, sharesKeyGen[1].Routing.IsBroadcast)
-	c.Assert(ret, Equals, blame.RoundInfo{Index: 1, RoundMsg: messages.KEYGEN2aUnicast})
+	c.Assert(ret, Equals, blame.RoundInfo{Index: 1, RoundMsg: messages.EDDSAKEYGEN1})
 	c.Assert(err, IsNil)
 }

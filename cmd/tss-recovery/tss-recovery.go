@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"io/ioutil"
 	"os"
 
-	"github.com/binance-chain/tss-lib/crypto/vss"
+	"github.com/HyperCore-Team/tss-lib/crypto/vss"
 	. "github.com/decred/dcrd/dcrec/secp256k1"
 )
 
@@ -19,7 +20,6 @@ func main() {
 	flag.Parse()
 	files := flag.Args()
 
-	setupBech32Prefix()
 	allSecret := make([]KeygenLocalState, len(files))
 	for i, f := range files {
 		tssSecret, err := getTssSecretFile(f)
@@ -40,7 +40,7 @@ func main() {
 		vssShares[i] = &share
 	}
 
-	tssPrivateKey, err := vssShares[:n].ReConstruct()
+	tssPrivateKey, err := vssShares[:n].ReConstruct(btss.Edwards())
 	if err != nil {
 		fmt.Printf("error in tss verify")
 	}

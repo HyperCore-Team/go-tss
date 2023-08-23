@@ -8,23 +8,25 @@ import (
 	"strings"
 	"sync"
 
-	btss "github.com/binance-chain/tss-lib/tss"
-	"github.com/libp2p/go-libp2p-core/peer"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 
-	"gitlab.com/thorchain/tss/go-tss/blame"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/blame"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/p2p"
 )
 
 // PartyInfo the information used by tss key gen and key sign
 type PartyInfo struct {
-	PartyMap   *sync.Map
-	PartyIDMap map[string]*btss.PartyID
+	PartyMap      *sync.Map
+	PartyIDMap    map[string]*btss.PartyID
+	NewPartyIDMap map[string]*btss.PartyID
+	OldPartyIDMap map[string]*btss.PartyID
 }
 
 type TssCommon struct {
@@ -35,6 +37,7 @@ type TssCommon struct {
 	PartyIDtoP2PID              map[string]peer.ID
 	unConfirmedMsgLock          *sync.Mutex
 	unConfirmedMessages         map[string]*LocalCacheItem
+	RoundInfo                   string
 	localPeerID                 string
 	broadcastChannel            chan *messages.BroadcastMsgChan
 	TssMsg                      chan *p2p.Message
@@ -198,7 +201,7 @@ func (t *TssCommon) processInvalidMsgBlame(roundInfo string, round blame.RoundIn
 	pubkeys, errBlame := conversion.AccPubKeysFromPartyIDs(culpritsID, t.partyInfo.PartyIDMap)
 	if errBlame != nil {
 		t.logger.Error().Err(err.Cause()).Msgf("error in get the blame nodes")
-		t.blameMgr.GetBlame().SetBlame(blame.TssBrokenMsg, nil, unicast)
+		t.blameMgr.GetBlame().SetBlame(blame.TssBrokenMsg, nil, unicast, roundInfo)
 		return fmt.Errorf("error in getting the blame nodes")
 	}
 	// This error indicates the share is wrong, we include this signature to prove that
@@ -217,7 +220,7 @@ func (t *TssCommon) processInvalidMsgBlame(roundInfo string, round blame.RoundIn
 		}
 		blameNodes = append(blameNodes, blame.NewNode(pk, msgBody, sig))
 	}
-	t.blameMgr.GetBlame().SetBlame(blame.TssBrokenMsg, blameNodes, unicast)
+	t.blameMgr.GetBlame().SetBlame(blame.TssBrokenMsg, blameNodes, unicast, roundInfo)
 	return fmt.Errorf("fail to set bytes to local party: %w", err)
 }
 
@@ -230,10 +233,6 @@ func (t *TssCommon) updateLocal(wireMsg *messages.WireMessage) error {
 	partyInfo := t.getPartyInfo()
 	if partyInfo == nil {
 		return nil
-	}
-	partyID, ok := partyInfo.PartyIDMap[wireMsg.Routing.From.Id]
-	if !ok {
-		return fmt.Errorf("get message from unknown party %s", partyID.Id)
 	}
 
 	dataOwnerPeerID, ok := t.PartyIDtoP2PID[wireMsg.Routing.From.Id]
@@ -261,16 +260,41 @@ func (t *TssCommon) updateLocal(wireMsg *messages.WireMessage) error {
 		go t.doTssJob(tssJobChan, &jobWg)
 	}
 	for _, msg := range bulkMsg {
+		var partyID *btss.PartyID
+		var ok bool
 		data, ok := partyInfo.PartyMap.Load(msg.MsgIdentifier)
 		if !ok {
 			t.logger.Error().Msg("cannot find the party to this wired msg")
-			return errors.New("cannot find the party")
+			return errors.New("cannot find the party ")
 		}
+
+		if msg.Routing.From.Id != wireMsg.Routing.From.Id {
+			// this should never happen , if it happened , which ever party did it , should be blamed and slashed
+			t.logger.Error().Msgf("all messages in a batch sign should have the same routing ,batch routing party id: %s, however message routing:%s", msg.Routing.From, wireMsg.Routing.From)
+		}
+
 		localMsgParty := data.(btss.Party)
-		partyID, ok := partyInfo.PartyIDMap[msg.Routing.From.Id]
-		if !ok {
-			t.logger.Error().Msg("error in find the partyID")
-			return errors.New("cannot find the party to handle the message")
+		// we need the switch to find out who we send to as the party index maybe
+		// overwritten in regroup
+		switch wireMsg.Routing.From.Moniker {
+		case OldParty:
+			partyID, ok = partyInfo.OldPartyIDMap[wireMsg.Routing.From.Id]
+			if !ok {
+				t.logger.Error().Msg("error in find the partyID")
+				return errors.New("cannot find the party to handle the message")
+			}
+		case NewParty:
+			partyID, ok = partyInfo.NewPartyIDMap[wireMsg.Routing.From.Id]
+			if !ok {
+				t.logger.Error().Msg("error in find the partyID")
+				return errors.New("cannot find the party to handle the message")
+			}
+		default:
+			partyID, ok = partyInfo.PartyIDMap[wireMsg.Routing.From.Id]
+			if !ok {
+				t.logger.Error().Msg("error in find the partyID")
+				return errors.New("cannot find the party to handle the message")
+			}
 		}
 
 		round, err := GetMsgRound(msg.WiredBulkMsgs, partyID, msg.Routing.IsBroadcast)
@@ -278,6 +302,7 @@ func (t *TssCommon) updateLocal(wireMsg *messages.WireMessage) error {
 			t.logger.Error().Err(err).Msg("broken tss share")
 			return err
 		}
+		t.RoundInfo = round.RoundMsg
 
 		// we only allow a message be updated only once.
 		// here we use round + msgIdentifier as the key for the acceptedShares
@@ -336,13 +361,13 @@ func (t *TssCommon) ProcessOneMessage(wrappedMsg *messages.WrappedMessage, peerI
 	}
 
 	switch wrappedMsg.MessageType {
-	case messages.TSSKeyGenMsg, messages.TSSKeySignMsg:
+	case messages.TSSKeyGenMsg, messages.TSSKeySignMsg, messages.TSSPartyReGroupMsg:
 		var wireMsg messages.WireMessage
 		if err := json.Unmarshal(wrappedMsg.Payload, &wireMsg); nil != err {
 			return fmt.Errorf("fail to unmarshal wire message: %w", err)
 		}
 		return t.processTSSMsg(&wireMsg, wrappedMsg.MessageType, false)
-	case messages.TSSKeyGenVerMsg, messages.TSSKeySignVerMsg:
+	case messages.TSSKeyGenVerMsg, messages.TSSKeySignVerMsg, messages.TSSPartReGroupVerMSg:
 		var bMsg messages.BroadcastConfirmMessage
 		if err := json.Unmarshal(wrappedMsg.Payload, &bMsg); nil != err {
 			return errors.New("fail to unmarshal broadcast confirm message")
@@ -389,7 +414,7 @@ func (t *TssCommon) ProcessOneMessage(wrappedMsg *messages.WrappedMessage, peerI
 			t.logger.Debug().Msg("this request does not exit, maybe already processed")
 			return nil
 		}
-		t.logger.Debug().Msg("we got the missing share from the peer")
+		t.logger.Info().Msg("we got the missing share from the peer")
 		return t.processTSSMsg(wireMsg.Msg, wireMsg.RequestType, true)
 	}
 
@@ -487,6 +512,15 @@ func (t *TssCommon) sendBulkMsg(wiredMsgType string, tssMsgType messages.THORCha
 				t.logger.Error().Msg("error in find the P2P ID")
 				continue
 			}
+			// if the message is sent to ourself, it means message goes to our `new party`
+			// we do not need to check the message send to ourself.
+			if peerID.String() == t.localPeerID {
+				err := t.updateLocal(&wireMsg)
+				if err != nil {
+					t.logger.Error().Err(err).Msgf("fail to apply the local message")
+				}
+				continue
+			}
 			peerIDs = append(peerIDs, peerID)
 		}
 	}
@@ -579,11 +613,11 @@ func (t *TssCommon) applyShare(localCacheItem *LocalCacheItem, threshold int, ke
 		blamePk, err := t.blameMgr.TssWrongShareBlame(localCacheItem.Msg)
 		if err != nil {
 			t.logger.Error().Err(err).Msgf("error in get the blame nodes")
-			t.blameMgr.GetBlame().SetBlame(blame.HashCheckFail, nil, unicast)
+			t.blameMgr.GetBlame().SetBlame(blame.HashCheckFail, nil, unicast, t.RoundInfo)
 			return fmt.Errorf("error in getting the blame nodes %w", blame.ErrHashCheck)
 		}
 		blameNode := blame.NewNode(blamePk, localCacheItem.Msg.Message, localCacheItem.Msg.Sig)
-		t.blameMgr.GetBlame().SetBlame(blame.HashCheckFail, []blame.Node{blameNode}, unicast)
+		t.blameMgr.GetBlame().SetBlame(blame.HashCheckFail, []blame.Node{blameNode}, unicast, t.RoundInfo)
 		return blame.ErrHashCheck
 	}
 
@@ -629,11 +663,14 @@ func (t *TssCommon) requestShareFromPeer(localCacheItem *LocalCacheItem, thresho
 	case messages.TSSKeySignVerMsg:
 		msg.RequestType = messages.TSSKeySignMsg
 		return t.processRequestMsgFromPeer(peersIDs, msg, true)
-	case messages.TSSKeySignMsg, messages.TSSKeyGenMsg:
+	case messages.TSSPartReGroupVerMSg:
+		msg.RequestType = messages.TSSPartyReGroupMsg
+		return t.processRequestMsgFromPeer(peersIDs, msg, true)
+	case messages.TSSKeySignMsg, messages.TSSKeyGenMsg, messages.TSSPartyReGroupMsg:
 		msg.RequestType = msgType
 		return t.processRequestMsgFromPeer(peersIDs, msg, true)
 	default:
-		t.logger.Debug().Msg("unknown message type")
+		t.logger.Info().Msg("unknown message type")
 		return nil
 	}
 }
@@ -746,7 +783,7 @@ func (t *TssCommon) processTSSMsg(wireMsg *messages.WireMessage, msgType message
 		return errors.New("error in find the data owner")
 	}
 	keyBytes := dataOwner.GetKey()
-	var pk secp256k1.PubKey
+	var pk ed25519.PubKey
 	pk = keyBytes
 	ok = verifySignature(pk, wireMsg.Message, wireMsg.Sig, t.msgID)
 	if !ok {
@@ -803,6 +840,8 @@ func getBroadcastMessageType(msgType messages.THORChainTSSMessageType) messages.
 		return messages.TSSKeyGenVerMsg
 	case messages.TSSKeySignMsg:
 		return messages.TSSKeySignVerMsg
+	case messages.TSSPartyReGroupMsg:
+		return messages.TSSPartReGroupVerMSg
 	default:
 		return messages.Unknown // this should not happen
 	}
@@ -865,4 +904,21 @@ func (t *TssCommon) ProcessInboundMessages(finishChan chan struct{}, wg *sync.Wa
 
 		}
 	}
+}
+
+func (t *TssCommon) ProcessRegroupOutCh(msg btss.Message, msgType messages.THORChainTSSMessageType, moniker string) error {
+	msgData, r, err := msg.WireBytes()
+	// if we cannot get the wire share, the tss will fail, we just quit.
+	if err != nil {
+		return fmt.Errorf("fail to get wire bytes: %w", err)
+	}
+
+	cachedWiredMsg := NewBulkWireMsg(msgData, moniker, r)
+	wiredMsgType := msg.Type()
+	err = t.sendBulkMsg(wiredMsgType, msgType, []BulkWireMsg{cachedWiredMsg})
+	if err != nil {
+		t.logger.Error().Err(err).Msg("error in send bulk message")
+		return err
+	}
+	return nil
 }

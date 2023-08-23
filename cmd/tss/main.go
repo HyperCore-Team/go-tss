@@ -1,24 +1,23 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
+	"github.com/HyperCore-Team/go-tss/messages"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/client/input"
 	golog "github.com/ipfs/go-log"
-	"github.com/libp2p/go-libp2p-peerstore/addr"
 	"gitlab.com/thorchain/binance-sdk/common/types"
+	"golang.org/x/term"
 
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
-	"gitlab.com/thorchain/tss/go-tss/tss"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/tss"
 )
 
 var (
@@ -42,25 +41,24 @@ func main() {
 	common.InitLog(logLevel, pretty, "tss_service")
 
 	// Setup Bech32 Prefixes
-	conversion.SetupBech32Prefix()
 	// this is only need for the binance library
 	if os.Getenv("NET") == "testnet" || os.Getenv("NET") == "mocknet" {
 		types.Network = types.TestNetwork
 	}
 	// Read stdin for the private key
-	inBuf := bufio.NewReader(os.Stdin)
-	priKeyBytes, err := input.GetPassword("input node secret key:", inBuf)
+	fmt.Println("input node secret key:")
+	priKeyBytes, err := term.ReadPassword(syscall.Stdin)
 	if err != nil {
 		fmt.Printf("error in get the secret key: %s\n", err.Error())
 		return
 	}
-	priKey, err := conversion.GetPriKey(priKeyBytes)
+	priKey, err := conversion.GetPriKey(string(priKeyBytes))
 	if err != nil {
 		log.Fatal(err)
 	}
 	// init tss module
 	tss, err := tss.NewTss(
-		addr.AddrList(p2pConf.BootstrapPeers),
+		[]maddr.Multiaddr(p2pConf.BootstrapPeers),
 		p2pConf.Port,
 		priKey,
 		p2pConf.RendezvousString,
@@ -68,6 +66,8 @@ func main() {
 		tssConf,
 		nil,
 		p2pConf.ExternalIP,
+		messages.EDDSAKEYGEN,
+		make(map[string]bool),
 	)
 	if nil != err {
 		log.Fatal(err)
@@ -81,7 +81,6 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
-	fmt.Println("stop ")
 	fmt.Println(s.Stop())
 }
 
