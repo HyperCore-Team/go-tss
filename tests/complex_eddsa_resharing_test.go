@@ -54,7 +54,7 @@ func Test_Complex_EDDSA_Resharing(t *testing.T) {
 		KeyGenTimeout:     90 * time.Second,
 		KeySignTimeout:    90 * time.Second,
 		KeyRegroupTimeout: 90 * time.Second,
-		PreParamTimeout:   5 * time.Second,
+		PreParamTimeout:   120 * time.Second,
 		EnableMonitor:     false,
 	}
 

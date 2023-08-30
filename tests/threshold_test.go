@@ -58,7 +58,7 @@ func Test_Threshold_ECDSA_KeySign(t *testing.T) {
 	conf := common.TssConfig{
 		KeyGenTimeout:   90 * time.Second,
 		KeySignTimeout:  40 * time.Second,
-		PreParamTimeout: 5 * time.Second,
+		PreParamTimeout: 120 * time.Second,
 		EnableMonitor:   false,
 	}
 

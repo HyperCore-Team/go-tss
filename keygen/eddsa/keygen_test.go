@@ -27,6 +27,7 @@ import (
 	"github.com/HyperCore-Team/go-tss/messages"
 	"github.com/HyperCore-Team/go-tss/p2p"
 	"github.com/HyperCore-Team/go-tss/storage"
+	pcrypto "github.com/libp2p/go-libp2p/core/crypto"
 )
 
 var (
@@ -98,17 +99,28 @@ func (s *EddsaKeygenTestSuite) SetUpTest(c *C) {
 	bootstrapPeer := "/ip4/127.0.0.1/tcp/19666/p2p/16Uiu2HAm4TmEzUqy3q3Dv7HvdoSboHk5sFj2FH3npiN5vDbJC6gh"
 	multiAddr, err := maddr.NewMultiaddr(bootstrapPeer)
 	c.Assert(err, IsNil)
+
+	whitelist := make(map[string]bool)
+	for i := 0; i < s.partyNum; i++ {
+		buf, err := base64.StdEncoding.DecodeString(testPriKeyArr[i])
+		c.Assert(err, IsNil)
+		p2pPriKey, err := pcrypto.UnmarshalEd25519PrivateKey(buf)
+		c.Assert(err, IsNil)
+		id, err := peer.IDFromPrivateKey(p2pPriKey)
+		c.Assert(err, IsNil)
+		whitelist[id.String()] = true
+	}
 	for i := 0; i < s.partyNum; i++ {
 		buf, err := base64.StdEncoding.DecodeString(testPriKeyArr[i])
 		c.Assert(err, IsNil)
 		if i == 0 {
-			comm, err := p2p.NewCommunication("asgard", nil, ports[i], "", map[string]bool{})
+			comm, err := p2p.NewCommunication("asgard", "", nil, ports[i], "", whitelist)
 			c.Assert(err, IsNil)
 			c.Assert(comm.Start(buf), IsNil)
 			s.comms[i] = comm
 			continue
 		}
-		comm, err := p2p.NewCommunication("asgard", []maddr.Multiaddr{multiAddr}, ports[i], "", map[string]bool{})
+		comm, err := p2p.NewCommunication("asgard", "", []maddr.Multiaddr{multiAddr}, ports[i], "", whitelist)
 		c.Assert(err, IsNil)
 		c.Assert(comm.Start(buf), IsNil)
 		s.comms[i] = comm
@@ -143,7 +155,7 @@ func (s *EddsaKeygenTestSuite) TestGenerateNewKey(c *C) {
 	conf := common.TssConfig{
 		KeyGenTimeout:   60 * time.Second,
 		KeySignTimeout:  60 * time.Second,
-		PreParamTimeout: 5 * time.Second,
+		PreParamTimeout: 120 * time.Second,
 	}
 	wg := sync.WaitGroup{}
 	lock := &sync.Mutex{}

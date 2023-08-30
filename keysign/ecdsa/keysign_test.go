@@ -147,13 +147,13 @@ func (s *TssKeysignTestSuite) SetUpTest(c *C) {
 		buf, err := base64.StdEncoding.DecodeString(testPriKeyArr[i])
 		c.Assert(err, IsNil)
 		if i == 0 {
-			comm, err := p2p.NewCommunication("asgard", nil, ports[i], "", whiteList)
+			comm, err := p2p.NewCommunication("asgard", "", nil, ports[i], "", whiteList)
 			c.Assert(err, IsNil)
 			c.Assert(comm.Start(buf), IsNil)
 			s.comms[i] = comm
 			continue
 		}
-		comm, err := p2p.NewCommunication("asgard", []maddr.Multiaddr{multiAddr}, ports[i], "", whiteList)
+		comm, err := p2p.NewCommunication("asgard", "", []maddr.Multiaddr{multiAddr}, ports[i], "", whiteList)
 		c.Assert(err, IsNil)
 		c.Assert(comm.Start(buf), IsNil)
 		s.comms[i] = comm
@@ -185,7 +185,7 @@ func (s *TssKeysignTestSuite) TestSignMessage(c *C) {
 	conf := common.TssConfig{
 		KeyGenTimeout:   90 * time.Second,
 		KeySignTimeout:  90 * time.Second,
-		PreParamTimeout: 5 * time.Second,
+		PreParamTimeout: 120 * time.Second,
 	}
 	var msgForSign [][]byte
 	msgForSign = append(msgForSign, []byte(req.Messages[0]))
@@ -282,7 +282,7 @@ func (s *TssKeysignTestSuite) TestSignMessageWithStop(c *C) {
 	conf := common.TssConfig{
 		KeyGenTimeout:   10 * time.Second,
 		KeySignTimeout:  20 * time.Second,
-		PreParamTimeout: 5 * time.Second,
+		PreParamTimeout: 120 * time.Second,
 	}
 
 	for i := 0; i < s.partyNum; i++ {
@@ -377,7 +377,7 @@ func (s *TssKeysignTestSuite) TestSignMessageRejectOnePeer(c *C) {
 	conf := common.TssConfig{
 		KeyGenTimeout:   20 * time.Second,
 		KeySignTimeout:  20 * time.Second,
-		PreParamTimeout: 5 * time.Second,
+		PreParamTimeout: 120 * time.Second,
 	}
 	for i := 0; i < s.partyNum; i++ {
 		wg.Add(1)

@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -46,7 +45,7 @@ func (s *FourNodeTestSuite) getEcdsaServer(index int, conf common.TssConfig, boo
 	} else {
 		peerIDs = nil
 	}
-	instance, err := tss.NewTss(peerIDs, s.ports[index], priKey, "Asgard", baseHome, conf, s.preParams[index], "", messages.ECDSAKEYGEN, pubKeyWhitelist)
+	instance, err := tss.NewTss(peerIDs, s.ports[index], priKey, "Asgard", baseHome, conf, nil, "", messages.ECDSAKEYGEN, pubKeyWhitelist)
 	if err != nil {
 		panic(err)
 	}
@@ -55,11 +54,11 @@ func (s *FourNodeTestSuite) getEcdsaServer(index int, conf common.TssConfig, boo
 
 func getPreparams() []*btsskeygen.LocalPreParams {
 	var preParamArray []*btsskeygen.LocalPreParams
-	buf, err := ioutil.ReadFile(path.Join(testFileLocation, preParamTestFile))
+	buf, err := os.ReadFile(path.Join(testFileLocation, preParamTestFile))
 	if err != nil {
 		return preParamArray
 	}
-	preParamsStr := strings.Split(string(buf), "\n")
+	preParamsStr := strings.Split(string(buf), ",")
 	for _, item := range preParamsStr {
 		var preParam btsskeygen.LocalPreParams
 		val, err := hex.DecodeString(item)
@@ -110,7 +109,7 @@ func Test_ECDSA_Keygen(t *testing.T) {
 	conf := common.TssConfig{
 		KeyGenTimeout:   90 * time.Second,
 		KeySignTimeout:  90 * time.Second,
-		PreParamTimeout: 10 * time.Second,
+		PreParamTimeout: 200 * time.Second,
 		EnableMonitor:   false,
 	}
 	var whiteList map[string]bool

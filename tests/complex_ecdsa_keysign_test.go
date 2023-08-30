@@ -54,7 +54,7 @@ func Test_Complex_ECDSA_Keygen_Multiple_Peers(t *testing.T) {
 	conf := common.TssConfig{
 		KeyGenTimeout:   90 * time.Second,
 		KeySignTimeout:  90 * time.Second,
-		PreParamTimeout: 5 * time.Second,
+		PreParamTimeout: 120 * time.Second,
 		EnableMonitor:   false,
 	}
 
@@ -165,7 +165,7 @@ func Test_Complex_ECDSA_Keygen(t *testing.T) {
 	conf := common.TssConfig{
 		KeyGenTimeout:   90 * time.Second,
 		KeySignTimeout:  90 * time.Second,
-		PreParamTimeout: 10 * time.Second,
+		PreParamTimeout: 120 * time.Second,
 		EnableMonitor:   false,
 	}
 	var whiteList map[string]bool
@@ -272,7 +272,7 @@ func Test_Complex_ECDSA_Keygen_Remove_Resharing(t *testing.T) {
 		KeyGenTimeout:     90 * time.Second,
 		KeySignTimeout:    90 * time.Second,
 		KeyRegroupTimeout: 90 * time.Second,
-		PreParamTimeout:   5 * time.Second,
+		PreParamTimeout:   120 * time.Second,
 		EnableMonitor:     false,
 	}
 

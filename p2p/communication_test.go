@@ -22,7 +22,7 @@ func (CommunicationTestSuite) TestBasicCommunication(c *C) {
 	whitelist["12D3KooWE4qDcRrueTuRYWUdQZgcy7APZqBngVeXRt4Y6ytHizKV"] = true
 	whitelist["12D3KooWHHzSeKaY8xuZVzkLbKFfvNgPPeKhFBGrMbNzbm5akpqu"] = true
 	whitelist["12D3KooWKRyzVWW6ChFjQjK4miCty85Niy49tpPV95XdKu1BcvMA"] = true
-	comm, err := NewCommunication("rendezvous", nil, 6668, "", whitelist)
+	comm, err := NewCommunication("rendezvous", "", nil, 6668, "", whitelist)
 	c.Assert(err, IsNil)
 	c.Assert(comm, NotNil)
 	comm.SetSubscribe(messages.TSSKeyGenMsg, "hello", make(chan *Message))
@@ -55,7 +55,7 @@ func (CommunicationTestSuite) TestEstablishP2pCommunication(c *C) {
 	whitelist["12D3KooWE4qDcRrueTuRYWUdQZgcy7APZqBngVeXRt4Y6ytHizKV"] = true
 	whitelist["12D3KooWHHzSeKaY8xuZVzkLbKFfvNgPPeKhFBGrMbNzbm5akpqu"] = true
 	whitelist["12D3KooWKRyzVWW6ChFjQjK4miCty85Niy49tpPV95XdKu1BcvMA"] = true
-	comm, err := NewCommunication("commTest", nil, 2220, fakeExternalIP, whitelist)
+	comm, err := NewCommunication("commTest", "", []maddr.Multiaddr{validMultiAddr}, 2220, fakeExternalIP, whitelist)
 	c.Assert(err, IsNil)
 	c.Assert(comm.Start(privKey), IsNil)
 
@@ -63,7 +63,7 @@ func (CommunicationTestSuite) TestEstablishP2pCommunication(c *C) {
 	sk1, _, err := crypto.GenerateEd25519Key(rand.Reader)
 	sk1raw, _ := sk1.Raw()
 	c.Assert(err, IsNil)
-	comm2, err := NewCommunication("commTest", []maddr.Multiaddr{validMultiAddr}, 2221, "", whitelist)
+	comm2, err := NewCommunication("commTest", "", []maddr.Multiaddr{validMultiAddr}, 2221, "", whitelist)
 	c.Assert(err, IsNil)
 	err = comm2.Start(sk1raw)
 	c.Assert(err, IsNil)
@@ -77,14 +77,14 @@ func (CommunicationTestSuite) TestEstablishP2pCommunication(c *C) {
 	invalidAddr := "/ip4/127.0.0.1/tcp/2220/p2p/" + id.String()
 	invalidMultiAddr, err := maddr.NewMultiaddr(invalidAddr)
 	c.Assert(err, IsNil)
-	comm3, err := NewCommunication("commTest", []maddr.Multiaddr{invalidMultiAddr}, 2222, "", whitelist)
+	comm3, err := NewCommunication("commTest", "", []maddr.Multiaddr{invalidMultiAddr}, 2222, "", whitelist)
 	c.Assert(err, IsNil)
 	err = comm3.Start(sk1raw)
 	c.Assert(err, ErrorMatches, "fail to connect to bootstrap peer: fail to connect to any peer")
 	defer comm3.Stop()
 
 	// we connect to one invalid and one valid address
-	comm4, err := NewCommunication("commTest", []maddr.Multiaddr{invalidMultiAddr, validMultiAddr}, 2223, "", whitelist)
+	comm4, err := NewCommunication("commTest", "", []maddr.Multiaddr{invalidMultiAddr, validMultiAddr}, 2223, "", whitelist)
 	c.Assert(err, IsNil)
 	err = comm4.Start(sk1raw)
 	c.Assert(err, IsNil)

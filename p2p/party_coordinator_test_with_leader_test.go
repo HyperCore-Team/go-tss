@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"context"
 	"math/rand"
 	"sort"
 	"sync"
@@ -21,7 +20,7 @@ func init() {
 }
 
 func setupHosts(t *testing.T, n int) []host.Host {
-	mn := mocknet.New(context.Background())
+	mn := mocknet.New()
 	var hosts []host.Host
 	for i := 0; i < n; i++ {
 
@@ -108,11 +107,12 @@ func TestNewPartyCoordinator(t *testing.T) {
 
 	timeout := time.Second * 4
 	whitelist := map[string]bool{}
-	whitelist["12D3KooWE4qDcRrueTuRYWUdQZgcy7APZqBngVeXRt4Y6ytHizKV"] = true
-	whitelist["12D3KooWHHzSeKaY8xuZVzkLbKFfvNgPPeKhFBGrMbNzbm5akpqu"] = true
-	whitelist["12D3KooWKRyzVWW6ChFjQjK4miCty85Niy49tpPV95XdKu1BcvMA"] = true
 	for _, el := range hosts {
-		pcs = append(pcs, NewPartyCoordinator(el, timeout, whitelist))
+		whitelist[el.ID().String()] = true
+	}
+
+	for _, el := range hosts {
+		pcs = append(pcs, NewPartyCoordinator(el, nil, timeout, whitelist))
 		peers = append(peers, el.ID().String())
 	}
 
@@ -150,11 +150,11 @@ func TestNewPartyCoordinatorTimeOut(t *testing.T) {
 	var pcs []*PartyCoordinator
 	var peers []string
 	whitelist := map[string]bool{}
-	whitelist["12D3KooWE4qDcRrueTuRYWUdQZgcy7APZqBngVeXRt4Y6ytHizKV"] = true
-	whitelist["12D3KooWHHzSeKaY8xuZVzkLbKFfvNgPPeKhFBGrMbNzbm5akpqu"] = true
-	whitelist["12D3KooWKRyzVWW6ChFjQjK4miCty85Niy49tpPV95XdKu1BcvMA"] = true
 	for _, el := range hosts {
-		pcs = append(pcs, NewPartyCoordinator(el, timeout, whitelist))
+		whitelist[el.ID().String()] = true
+	}
+	for _, el := range hosts {
+		pcs = append(pcs, NewPartyCoordinator(el, nil, timeout, whitelist))
 	}
 	sort.Slice(pcs, func(i, j int) bool {
 		return pcs[i].host.ID().String() > pcs[j].host.ID().String()
@@ -225,7 +225,7 @@ func TestNewPartyCoordinatorTimeOut(t *testing.T) {
 
 func TestGetPeerIDs(t *testing.T) {
 	id1 := tnet.RandIdentityOrFatal(t)
-	mn := mocknet.New(context.Background())
+	mn := mocknet.New()
 	// add peers to mock net
 
 	a1 := tnet.RandLocalTCPAddress()
@@ -236,10 +236,8 @@ func TestGetPeerIDs(t *testing.T) {
 	p1 := h1.ID()
 	timeout := time.Second * 2
 	whitelist := map[string]bool{}
-	whitelist["12D3KooWE4qDcRrueTuRYWUdQZgcy7APZqBngVeXRt4Y6ytHizKV"] = true
-	whitelist["12D3KooWHHzSeKaY8xuZVzkLbKFfvNgPPeKhFBGrMbNzbm5akpqu"] = true
-	whitelist["12D3KooWKRyzVWW6ChFjQjK4miCty85Niy49tpPV95XdKu1BcvMA"] = true
-	pc := NewPartyCoordinator(h1, timeout, whitelist)
+	whitelist[p1.String()] = true
+	pc := NewPartyCoordinator(h1, nil, timeout, whitelist)
 	r, err := pc.getPeerIDs([]string{})
 	assert.Nil(t, err)
 	assert.Len(t, r, 0)

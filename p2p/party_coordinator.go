@@ -45,9 +45,15 @@ func NewPartyCoordinator(host host.Host, logFile *os.File, timeout time.Duration
 	if timeout.Nanoseconds() == 0 {
 		timeout = 10 * time.Second
 	}
+	var logger zerolog.Logger
+	if logFile != nil {
+		logger = log.With().Str("module", "party_coordinator").Logger().Output(logFile)
+	} else {
+		logger = log.With().Str("module", "party_coordinator").Logger()
+	}
 
 	pc := &PartyCoordinator{
-		logger:             log.With().Str("module", "party_coordinator").Logger().Output(logFile),
+		logger:             logger,
 		host:               host,
 		stopChan:           make(chan struct{}),
 		timeout:            timeout,

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/HyperCore-Team/go-tss/messages"
+	maddr "github.com/multiformats/go-multiaddr"
 	"log"
 	"os"
 	"os/signal"

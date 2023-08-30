@@ -79,15 +79,22 @@ func NewCommunication(rendezvous, baseDir string, bootstrapPeers []maddr.Multiad
 			return nil, fmt.Errorf("fail to create listen with given external IP: %w", err)
 		}
 	}
-	outputFile, err := os.Create(filepath.Join(baseDir, "tss.communication.log"))
-	if err != nil {
-		return nil, err
+
+	var logger zerolog.Logger
+	if len(baseDir) != 0 {
+		outputFile, err := os.Create(filepath.Join(baseDir, "tss.communication.log"))
+		if err != nil {
+			return nil, err
+		}
+		logger = log.With().Str("module", "communication").Logger().Output(outputFile)
+	} else {
+		logger = log.With().Str("module", "communication").Logger()
 	}
 
 	return &Communication{
 		rendezvous:       rendezvous,
 		bootstrapPeers:   bootstrapPeers,
-		logger:           log.With().Str("module", "communication").Logger().Output(outputFile),
+		logger:           logger,
 		listenAddr:       addr,
 		wg:               &sync.WaitGroup{},
 		stopChan:         make(chan struct{}),

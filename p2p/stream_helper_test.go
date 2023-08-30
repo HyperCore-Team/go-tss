@@ -42,8 +42,24 @@ func (m MockNetworkStream) Close() error {
 	return nil
 }
 
+func (m MockNetworkStream) CloseRead() error {
+	return nil
+}
+
+func (m MockNetworkStream) CloseWrite() error {
+	return nil
+}
+
+func (m MockNetworkStream) Scope() network.StreamScope {
+	return nil
+}
+
 func (m MockNetworkStream) Reset() error {
 	return nil
+}
+
+func (m MockNetworkStream) Stat() network.Stats {
+	return network.Stats{}
 }
 
 func (m MockNetworkStream) SetDeadline(time.Time) error {
@@ -68,19 +84,13 @@ func (m MockNetworkStream) Protocol() protocol.ID {
 	return m.protocol
 }
 
-func (m MockNetworkStream) SetProtocol(id protocol.ID) {
+func (m MockNetworkStream) SetProtocol(id protocol.ID) error {
 	m.protocol = id
+	return nil
 }
 
 func (s MockNetworkStream) ID() string {
 	return strconv.FormatInt(s.id, 10)
-}
-
-func (m MockNetworkStream) Stat() network.Stat {
-	return network.Stat{
-		Direction: 0,
-		Extra:     make(map[interface{}]interface{}),
-	}
 }
 
 func (m MockNetworkStream) Conn() network.Conn {

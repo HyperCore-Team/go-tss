@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"context"
 	"math/rand"
 	"sort"
 	"sync"
@@ -17,7 +16,7 @@ import (
 )
 
 func setupHostsLocally(t *testing.T, n int) []host.Host {
-	mn := mocknet.New(context.Background())
+	mn := mocknet.New()
 	var hosts []host.Host
 	for i := 0; i < n; i++ {
 
@@ -45,9 +44,14 @@ func TestPartyCoordinator(t *testing.T) {
 	var pcs []PartyCoordinator
 	var peers []string
 
+	whitelist := make(map[string]bool)
+	for _, el := range hosts {
+		whitelist[el.ID().String()] = true
+	}
+
 	timeout := time.Second * 10
 	for _, el := range hosts {
-		pcs = append(pcs, *NewPartyCoordinator(el, timeout, map[string]bool{}))
+		pcs = append(pcs, *NewPartyCoordinator(el, nil, timeout, whitelist))
 		peers = append(peers, el.ID().String())
 	}
 
@@ -90,7 +94,7 @@ func TestPartyCoordinatorTimeOut(t *testing.T) {
 	whitelist["12D3KooWHHzSeKaY8xuZVzkLbKFfvNgPPeKhFBGrMbNzbm5akpqu"] = true
 	whitelist["12D3KooWKRyzVWW6ChFjQjK4miCty85Niy49tpPV95XdKu1BcvMA"] = true
 	for _, el := range hosts {
-		pcs = append(pcs, NewPartyCoordinator(el, timeout, whitelist))
+		pcs = append(pcs, NewPartyCoordinator(el, nil, timeout, whitelist))
 	}
 	sort.Slice(pcs, func(i, j int) bool {
 		return pcs[i].host.ID().String() > pcs[j].host.ID().String()

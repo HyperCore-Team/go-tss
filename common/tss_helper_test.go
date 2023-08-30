@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
 	"math/big"
+	"os"
 	"path"
 
 	btss "github.com/HyperCore-Team/tss-lib/tss"
@@ -100,10 +100,10 @@ func (t *tssHelpSuite) TestGetMsgRound(c *C) {
 	fileNameKeyGen := "shareskeygen0"
 	fileNameKeySign := "shareskeysign0"
 	filePathKeyGen := path.Join("../test_data/tss_keygen_shares", fileNameKeyGen)
-	dataKeyGen, err := ioutil.ReadFile(filePathKeyGen)
+	dataKeyGen, err := os.ReadFile(filePathKeyGen)
 	c.Assert(err, IsNil)
 	filePathKeySign := path.Join("../test_data/tss_keysign_shares", fileNameKeySign)
-	dataKeySign, err := ioutil.ReadFile(filePathKeySign)
+	dataKeySign, err := os.ReadFile(filePathKeySign)
 	sharesRawKeyGen := bytes.Split(dataKeyGen, []byte("\n"))
 	sharesRawKeySign := bytes.Split(dataKeySign, []byte("\n"))
 	var sharesKeyGen []*messages.WireMessage
