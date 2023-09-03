@@ -315,7 +315,7 @@ func (pc *PartyCoordinator) sendRequestToAll(msgID string, msgSend []byte, peers
 }
 
 func (pc *PartyCoordinator) sendMsgToPeer(msgBuf []byte, msgID string, remotePeer peer.ID, protoc protocol.ID, needResponse bool) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 	var stream network.Stream
 	var streamError error
@@ -561,7 +561,7 @@ func (pc *PartyCoordinator) JoinPartyWithRetry(msgID string, peers []string) ([]
 			default:
 				pc.sendRequestToAll(msgID, msgSend, offline)
 			}
-			time.Sleep(time.Second)
+			time.Sleep(5 * time.Second)
 		}
 	}()
 	// this is the total time TSS will wait for the party to form
@@ -587,6 +587,7 @@ func (pc *PartyCoordinator) JoinPartyWithRetry(msgID string, peers []string) ([]
 	wg.Wait()
 	onlinePeers, _ := peerGroup.getPeersStatus()
 	pc.sendRequestToAll(msgID, msgSend, onlinePeers)
+	time.Sleep(5 * time.Second)
 	// we always set ourselves as online
 	onlinePeers = append(onlinePeers, pc.host.ID())
 	if len(onlinePeers) == len(peers) {

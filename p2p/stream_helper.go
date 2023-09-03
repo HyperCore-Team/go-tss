@@ -15,8 +15,8 @@ import (
 
 const (
 	LengthHeader        = 4 // LengthHeader represent how many bytes we used as header
-	TimeoutReadPayload  = time.Second * 20
-	TimeoutWritePayload = time.Second * 20
+	TimeoutReadPayload  = time.Second * 5
+	TimeoutWritePayload = time.Second * 5
 	MaxPayload          = 20000000 // 20M
 )
 
