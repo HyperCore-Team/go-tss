@@ -2,11 +2,11 @@ package tests
 
 import (
 	"fmt"
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/keygen"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	keyRegroup "gitlab.com/thorchain/tss/go-tss/regroup"
-	"gitlab.com/thorchain/tss/go-tss/tss"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/keygen"
+	"github.com/HyperCore-Team/go-tss/messages"
+	keyRegroup "github.com/HyperCore-Team/go-tss/regroup"
+	"github.com/HyperCore-Team/go-tss/tss"
 	"sync"
 	"testing"
 	"time"

@@ -3,20 +3,20 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"gitlab.com/thorchain/tss/go-tss/keysign"
+	"github.com/HyperCore-Team/go-tss/keysign"
 	"os"
 	"path"
 	"strconv"
 	"time"
 
-	btsskeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
+	btsskeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
 	maddr "github.com/multiformats/go-multiaddr"
 
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/keygen"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/tss"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/keygen"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/tss"
 )
 
 func getEcdsaServer(index int, port int, privKey string, param *btsskeygen.LocalPreParams, conf common.TssConfig, bootstrap string, pubKeyWhitelist map[string]bool) *tss.TssServer {

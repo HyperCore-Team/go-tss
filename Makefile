@@ -1,4 +1,4 @@
-module = gitlab.com/thorchain/tss/go-tss
+module = github.com/HyperCore-Team/go-tss
 
 .PHONY: clear tools install test test-watch lint-pre lint lint-verbose protob build docker-gitlab-login docker-gitlab-push docker-gitlab-build
 
@@ -47,8 +47,8 @@ docker-gitlab-login:
 	docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
 
 docker-gitlab-push:
-	docker push registry.gitlab.com/thorchain/tss/go-tss
+	docker push registry.github.com/HyperCore-Team/go-tss
 
 docker-gitlab-build:
-	docker build -t registry.gitlab.com/thorchain/tss/go-tss .
-	docker tag registry.gitlab.com/thorchain/tss/go-tss $$(git rev-parse --short HEAD)
+	docker build -t registry.github.com/HyperCore-Team/go-tss .
+	docker tag registry.github.com/HyperCore-Team/go-tss $$(git rev-parse --short HEAD)

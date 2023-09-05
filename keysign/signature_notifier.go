@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/binance-chain/tss-lib/common"
-	tsslibcommon "github.com/binance-chain/tss-lib/common"
+	"github.com/HyperCore-Team/tss-lib/common"
+	tsslibcommon "github.com/HyperCore-Team/tss-lib/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/network"
@@ -16,8 +16,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/p2p"
 )
 
 var signatureNotifierProtocol protocol.ID = "/p2p/signatureNotifier"

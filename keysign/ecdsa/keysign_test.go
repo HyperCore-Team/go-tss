@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	tsslibcommon "github.com/binance-chain/tss-lib/common"
-	btss "github.com/binance-chain/tss-lib/tss"
+	tsslibcommon "github.com/HyperCore-Team/tss-lib/common"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
 	zlog "github.com/rs/zerolog/log"
@@ -26,11 +26,11 @@ import (
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	. "gopkg.in/check.v1"
 
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/keysign"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
-	"gitlab.com/thorchain/tss/go-tss/storage"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/keysign"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/storage"
 )
 
 var (
@@ -148,13 +148,13 @@ func (s *TssKeysignTestSuite) SetUpTest(c *C) {
 		buf, err := base64.StdEncoding.DecodeString(testPriKeyArr[i])
 		c.Assert(err, IsNil)
 		if i == 0 {
-			comm, err := p2p.NewCommunication("asgard", nil, ports[i], "", whiteList)
+			comm, err := p2p.NewCommunication("asgard", "", nil, ports[i], "", whiteList)
 			c.Assert(err, IsNil)
 			c.Assert(comm.Start(buf), IsNil)
 			s.comms[i] = comm
 			continue
 		}
-		comm, err := p2p.NewCommunication("asgard", []maddr.Multiaddr{multiAddr}, ports[i], "", whiteList)
+		comm, err := p2p.NewCommunication("asgard", "", []maddr.Multiaddr{multiAddr}, ports[i], "", whiteList)
 		c.Assert(err, IsNil)
 		c.Assert(comm.Start(buf), IsNil)
 		s.comms[i] = comm

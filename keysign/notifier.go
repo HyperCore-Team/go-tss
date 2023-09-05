@@ -5,9 +5,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/binance-chain/tss-lib/common"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/tss-lib/common"
 	"github.com/tendermint/btcd/btcec"
-	"gitlab.com/thorchain/tss/go-tss/messages"
 	"golang.org/x/crypto/ed25519"
 	"math/big"
 )

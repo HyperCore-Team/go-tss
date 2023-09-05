@@ -7,9 +7,9 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/HyperCore-Team/tss-lib/tss"
 
-	"github.com/binance-chain/tss-lib/crypto"
+	"github.com/HyperCore-Team/tss-lib/crypto"
 	"github.com/btcsuite/btcd/btcec"
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -93,7 +93,6 @@ func (p *ConversionTestSuite) TestGetParties(c *C) {
 	c.Assert(err, NotNil)
 }
 
-//
 func (p *ConversionTestSuite) TestGetPeerIDFromPartyID(c *C) {
 	_, localParty, err := GetParties(p.testPubKeys, p.testPubKeys[0], true, "")
 	c.Assert(err, IsNil)

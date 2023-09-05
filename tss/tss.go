@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	keyRegroup "gitlab.com/thorchain/tss/go-tss/regroup"
+	keyRegroup "github.com/HyperCore-Team/go-tss/regroup"
 
-	bkeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
-	btsskeygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
+	bkeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
+	btsskeygen "github.com/HyperCore-Team/tss-lib/ecdsa/keygen"
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
@@ -22,14 +22,14 @@ import (
 	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/keygen"
-	"gitlab.com/thorchain/tss/go-tss/keysign"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/monitor"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
-	"gitlab.com/thorchain/tss/go-tss/storage"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/keygen"
+	"github.com/HyperCore-Team/go-tss/keysign"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/monitor"
+	"github.com/HyperCore-Team/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/storage"
 )
 
 // TssServer is the structure that can provide all keysign and key gen features

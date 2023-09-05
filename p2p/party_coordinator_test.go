@@ -13,7 +13,7 @@ import (
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.com/thorchain/tss/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/conversion"
 )
 
 func setupHostsLocally(t *testing.T, n int) []host.Host {
@@ -47,7 +47,7 @@ func TestPartyCoordinator(t *testing.T) {
 
 	timeout := time.Second * 10
 	for _, el := range hosts {
-		pcs = append(pcs, *NewPartyCoordinator(el, timeout, map[string]bool{}))
+		pcs = append(pcs, *NewPartyCoordinator(el, nil, timeout, map[string]bool{}))
 		peers = append(peers, el.ID().String())
 	}
 
@@ -90,7 +90,7 @@ func TestPartyCoordinatorTimeOut(t *testing.T) {
 	whitelist["12D3KooWHHzSeKaY8xuZVzkLbKFfvNgPPeKhFBGrMbNzbm5akpqu"] = true
 	whitelist["12D3KooWKRyzVWW6ChFjQjK4miCty85Niy49tpPV95XdKu1BcvMA"] = true
 	for _, el := range hosts {
-		pcs = append(pcs, NewPartyCoordinator(el, timeout, whitelist))
+		pcs = append(pcs, NewPartyCoordinator(el, nil, timeout, whitelist))
 	}
 	sort.Slice(pcs, func(i, j int) bool {
 		return pcs[i].host.ID().String() > pcs[j].host.ID().String()

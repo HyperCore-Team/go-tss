@@ -13,20 +13,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/binance-chain/tss-lib/crypto"
+	"github.com/HyperCore-Team/tss-lib/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 
-	btss "github.com/binance-chain/tss-lib/tss"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	maddr "github.com/multiformats/go-multiaddr"
 	. "gopkg.in/check.v1"
 
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/keygen"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
-	"gitlab.com/thorchain/tss/go-tss/storage"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/keygen"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/storage"
 )
 
 var (
@@ -102,13 +102,13 @@ func (s *EddsaKeygenTestSuite) SetUpTest(c *C) {
 		buf, err := base64.StdEncoding.DecodeString(testPriKeyArr[i])
 		c.Assert(err, IsNil)
 		if i == 0 {
-			comm, err := p2p.NewCommunication("asgard", nil, ports[i], "", map[string]bool{})
+			comm, err := p2p.NewCommunication("asgard", "", nil, ports[i], "", map[string]bool{})
 			c.Assert(err, IsNil)
 			c.Assert(comm.Start(buf), IsNil)
 			s.comms[i] = comm
 			continue
 		}
-		comm, err := p2p.NewCommunication("asgard", []maddr.Multiaddr{multiAddr}, ports[i], "", map[string]bool{})
+		comm, err := p2p.NewCommunication("asgard", "", []maddr.Multiaddr{multiAddr}, ports[i], "", map[string]bool{})
 		c.Assert(err, IsNil)
 		c.Assert(comm.Start(buf), IsNil)
 		s.comms[i] = comm

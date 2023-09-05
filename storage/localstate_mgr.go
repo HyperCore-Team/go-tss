@@ -13,13 +13,13 @@ import (
 	"strings"
 	"sync"
 
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/messages"
 
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-peerstore/addr"
 	ma "github.com/multiformats/go-multiaddr"
 
-	"gitlab.com/thorchain/tss/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/conversion"
 )
 
 // KeygenLocalState is a structure used to represent the data we saved locally for different keygen

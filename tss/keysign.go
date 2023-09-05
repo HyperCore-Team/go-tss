@@ -9,19 +9,19 @@ import (
 	"sync"
 	"time"
 
-	"gitlab.com/thorchain/tss/go-tss/keysign/ecdsa"
-	"gitlab.com/thorchain/tss/go-tss/keysign/eddsa"
+	"github.com/HyperCore-Team/go-tss/keysign/ecdsa"
+	"github.com/HyperCore-Team/go-tss/keysign/eddsa"
 
-	tsslibcommon "github.com/binance-chain/tss-lib/common"
+	tsslibcommon "github.com/HyperCore-Team/tss-lib/common"
 	"github.com/libp2p/go-libp2p-core/peer"
 
-	"gitlab.com/thorchain/tss/go-tss/blame"
-	"gitlab.com/thorchain/tss/go-tss/common"
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/keysign"
-	"gitlab.com/thorchain/tss/go-tss/messages"
-	"gitlab.com/thorchain/tss/go-tss/p2p"
-	"gitlab.com/thorchain/tss/go-tss/storage"
+	"github.com/HyperCore-Team/go-tss/blame"
+	"github.com/HyperCore-Team/go-tss/common"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/keysign"
+	"github.com/HyperCore-Team/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/p2p"
+	"github.com/HyperCore-Team/go-tss/storage"
 )
 
 func (t *TssServer) waitForSignatures(msgID, poolPubKey string, msgsToSign [][]byte, sigChan chan string, algo messages.Algo) (keysign.Response, error) {

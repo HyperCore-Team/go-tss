@@ -16,8 +16,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 
-	"gitlab.com/thorchain/tss/go-tss/conversion"
-	"gitlab.com/thorchain/tss/go-tss/messages"
+	"github.com/HyperCore-Team/go-tss/conversion"
+	"github.com/HyperCore-Team/go-tss/messages"
 )
 
 var (
@@ -46,8 +46,15 @@ func NewPartyCoordinator(host host.Host, logFile *os.File, timeout time.Duration
 		timeout = 10 * time.Second
 	}
 
+	var logger zerolog.Logger
+	if logFile != nil {
+		logger = log.With().Str("module", "party_coordinator").Logger().Output(logFile)
+	} else {
+		logger = log.With().Str("module", "party_coordinator").Logger()
+	}
+
 	pc := &PartyCoordinator{
-		logger:             log.With().Str("module", "party_coordinator").Logger().Output(logFile),
+		logger:             logger,
 		host:               host,
 		stopChan:           make(chan struct{}),
 		timeout:            timeout,

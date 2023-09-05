@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	btss "github.com/binance-chain/tss-lib/tss"
+	btss "github.com/HyperCore-Team/tss-lib/tss"
 	"io/ioutil"
 	"os"
 
-	"github.com/binance-chain/tss-lib/crypto/vss"
+	"github.com/HyperCore-Team/tss-lib/crypto/vss"
 	. "github.com/decred/dcrd/dcrec/secp256k1"
 )
 
