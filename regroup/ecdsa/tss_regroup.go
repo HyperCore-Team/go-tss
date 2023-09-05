@@ -288,7 +288,7 @@ func (tKeyReGroup *TssKeyReGroup) processKeyReGroup(errChan chan struct{},
 			}
 
 			if len(blameNodesUnicast) > 0 && len(blameNodesUnicast) <= threshold {
-				blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true)
+				blameMgr.GetBlame().SetBlame(failReason, blameNodesUnicast, true, messages.KEYREGROUP3a)
 			}
 			blameNodesBroadcast, err := blameMgr.GetBroadcastBlame(lastMsg.Type())
 			if err != nil {

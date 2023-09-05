@@ -26,4 +26,8 @@ func (BlameTestSuite) TestBlame(c *C) {
 	c.Assert(b.BlameNodes, HasLen, 4)
 	b.SetBlame("helloworld", nil, false)
 	c.Assert(b.FailReason, Equals, "helloworld")
+	b.SetBlame("helloworld", nil, false, "round5")
+	c.Assert(b.FailReason, Equals, "helloworld")
+	c.Assert(b.Round, Equals, "round5")
+
 }

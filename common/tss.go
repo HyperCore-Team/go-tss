@@ -37,6 +37,7 @@ type TssCommon struct {
 	PartyIDtoP2PID              map[string]peer.ID
 	unConfirmedMsgLock          *sync.Mutex
 	unConfirmedMessages         map[string]*LocalCacheItem
+	RoundInfo                   string
 	localPeerID                 string
 	broadcastChannel            chan *messages.BroadcastMsgChan
 	TssMsg                      chan *p2p.Message
@@ -200,7 +201,7 @@ func (t *TssCommon) processInvalidMsgBlame(roundInfo string, round blame.RoundIn
 	pubkeys, errBlame := conversion.AccPubKeysFromPartyIDs(culpritsID, t.partyInfo.PartyIDMap)
 	if errBlame != nil {
 		t.logger.Error().Err(err.Cause()).Msgf("error in get the blame nodes")
-		t.blameMgr.GetBlame().SetBlame(blame.TssBrokenMsg, nil, unicast)
+		t.blameMgr.GetBlame().SetBlame(blame.TssBrokenMsg, nil, unicast, roundInfo)
 		return fmt.Errorf("error in getting the blame nodes")
 	}
 	// This error indicates the share is wrong, we include this signature to prove that
@@ -219,7 +220,7 @@ func (t *TssCommon) processInvalidMsgBlame(roundInfo string, round blame.RoundIn
 		}
 		blameNodes = append(blameNodes, blame.NewNode(pk, msgBody, sig))
 	}
-	t.blameMgr.GetBlame().SetBlame(blame.TssBrokenMsg, blameNodes, unicast)
+	t.blameMgr.GetBlame().SetBlame(blame.TssBrokenMsg, blameNodes, unicast, roundInfo)
 	return fmt.Errorf("fail to set bytes to local party: %w", err)
 }
 
@@ -267,35 +268,41 @@ func (t *TssCommon) updateLocal(wireMsg *messages.WireMessage) error {
 			return errors.New("cannot find the party ")
 		}
 
+		if msg.Routing.From.Id != wireMsg.Routing.From.Id {
+			// this should never happen , if it happened , which ever party did it , should be blamed and slashed
+			t.logger.Error().Msgf("all messages in a batch sign should have the same routing ,batch routing party id: %s, however message routing:%s", msg.Routing.From, wireMsg.Routing.From)
+		}
+
 		localMsgParty := data.(btss.Party)
 		// we need the switch to find out who we send to as the party index maybe
 		// overwritten in regroup
-		switch msg.Routing.From.Moniker {
+		switch wireMsg.Routing.From.Moniker {
 		case OldParty:
-			partyID, ok = partyInfo.OldPartyIDMap[msg.Routing.From.Id]
+			partyID, ok = partyInfo.OldPartyIDMap[wireMsg.Routing.From.Id]
 			if !ok {
 				t.logger.Error().Msg("error in find the partyID")
 				return errors.New("cannot find the party to handle the message")
 			}
 		case NewParty:
-			partyID, ok = partyInfo.NewPartyIDMap[msg.Routing.From.Id]
+			partyID, ok = partyInfo.NewPartyIDMap[wireMsg.Routing.From.Id]
 			if !ok {
 				t.logger.Error().Msg("error in find the partyID")
 				return errors.New("cannot find the party to handle the message")
 			}
 		default:
-			partyID, ok = partyInfo.PartyIDMap[msg.Routing.From.Id]
+			partyID, ok = partyInfo.PartyIDMap[wireMsg.Routing.From.Id]
 			if !ok {
 				t.logger.Error().Msg("error in find the partyID")
 				return errors.New("cannot find the party to handle the message")
 			}
 		}
 
-		round, err := GetMsgRound(msg.WiredBulkMsgs, partyID, msg.Routing.IsBroadcast)
+		round, err := GetMsgRound(msg.WiredBulkMsgs, partyID, wireMsg.Routing.IsBroadcast)
 		if err != nil {
 			t.logger.Error().Err(err).Msg("broken tss share")
 			return err
 		}
+		t.RoundInfo = round.RoundMsg
 
 		// we only allow a message be updated only once.
 		// here we use round + msgIdentifier as the key for the acceptedShares
@@ -606,11 +613,11 @@ func (t *TssCommon) applyShare(localCacheItem *LocalCacheItem, threshold int, ke
 		blamePk, err := t.blameMgr.TssWrongShareBlame(localCacheItem.Msg)
 		if err != nil {
 			t.logger.Error().Err(err).Msgf("error in get the blame nodes")
-			t.blameMgr.GetBlame().SetBlame(blame.HashCheckFail, nil, unicast)
+			t.blameMgr.GetBlame().SetBlame(blame.HashCheckFail, nil, unicast, t.RoundInfo)
 			return fmt.Errorf("error in getting the blame nodes %w", blame.ErrHashCheck)
 		}
 		blameNode := blame.NewNode(blamePk, localCacheItem.Msg.Message, localCacheItem.Msg.Sig)
-		t.blameMgr.GetBlame().SetBlame(blame.HashCheckFail, []blame.Node{blameNode}, unicast)
+		t.blameMgr.GetBlame().SetBlame(blame.HashCheckFail, []blame.Node{blameNode}, unicast, t.RoundInfo)
 		return blame.ErrHashCheck
 	}
 

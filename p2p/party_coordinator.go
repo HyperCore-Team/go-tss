@@ -562,7 +562,7 @@ func (pc *PartyCoordinator) JoinPartyWithRetry(msgID string, peers []string) ([]
 			default:
 				pc.sendRequestToAll(msgID, msgSend, offline)
 			}
-			time.Sleep(time.Second)
+			time.Sleep(5 * time.Second)
 		}
 	}()
 	// this is the total time TSS will wait for the party to form
