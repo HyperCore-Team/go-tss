@@ -158,6 +158,10 @@ func (t *TssServer) Stop() {
 	log.Info().Msg("The Tss and p2p server has been stopped successfully")
 }
 
+func (t *TssServer) ExportPeersStore() map[peer.ID]addr.AddrList {
+	return t.p2pCommunication.ExportPeerAddress()
+}
+
 func (t *TssServer) SetPartyTimeout(partyTimeout time.Duration) {
 	t.conf.PartyTimeout = partyTimeout
 	if t.partyCoordinator != nil {
